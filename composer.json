@@ -11,13 +11,15 @@
   ],
   "version": "1.0.0",
   "require": {
-    "slim/slim": "^4.15",
-    "nyholm/psr7": "^1.8",
-    "nyholm/psr7-server": "^1.1",
-    "guzzlehttp/guzzle": "^7.10",
     "ext-pdo_sqlite": "*",
+    "guzzlehttp/guzzle": "^7.10",
+    "nyholm/psr7-server": "^1.1",
+    "nyholm/psr7": "^1.8",
+    "php-di/php-di": "^7.1",
     "salsify/json-streaming-parser": "^8.3",
-    "php-di/php-di": "^7.1"
+    "slim/slim": "^4.15",
+    "slim/twig-view": "^3.3",
+    "zircote/swagger-php": "^4.8"
   },
   "autoload": {
     "psr-4": {

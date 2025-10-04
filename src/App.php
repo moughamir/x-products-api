@@ -6,15 +6,15 @@ namespace App;
 use Slim\Factory\AppFactory;
 use App\Controllers\ApiController;
 use App\Middleware\ApiKeyMiddleware;
+
 use App\Services\ImageProxy;
 use App\Services\ProductService;
 use App\Services\ImageService;
 use PDO;
 use Slim\Routing\RouteCollectorProxy;
 use DI\ContainerBuilder;
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Psr\Http\Message\ResponseFactoryInterface;
-use Psr\Http\Message\StreamFactoryInterface;
+use Slim\Views\Twig;
+use Slim\Views\TwigMiddleware;
 
 class App
 {
@@ -25,8 +25,11 @@ class App
 
         $containerBuilder = new ContainerBuilder();
         $containerBuilder->addDefinitions([
-            ResponseFactoryInterface::class => DI\create(Psr17Factory::class),
-            StreamFactoryInterface::class => DI\create(Psr17Factory::class),
+            // --- Twig View Configuration (for Swagger UI) ---
+            Twig::class => function() {
+                // Point to the directory where your template files are located
+                return Twig::create(__DIR__ . '/../templates', ['cache' => false]);
+            },
 
             PDO::class => function() use ($dbConfig) {
                 $dbFile = $dbConfig['db_file'];
@@ -42,17 +45,16 @@ class App
             ProductService::class => fn($container) => new ProductService($container->get(PDO::class)),
             ImageService::class => fn($container) => new ImageService($container->get(PDO::class)),
 
-            // ApiController now receives config to process Image URLs
             ApiController::class => fn($container) => new ApiController(
                 $container->get(ProductService::class),
                 $container->get(ImageService::class),
-                $container->get('config')
+                $container->get(Twig::class) // Inject Twig for documentation controller methods
             ),
 
-            // ImageProxy does NOT need cache config anymore
             ImageProxy::class => fn() => new ImageProxy($config),
 
-            'config' => $config
+            'config' => $config,
+            'source_dir' => __DIR__ . '/Controllers' // Source directory for Swagger annotation scanning
         ]);
 
         $container = $containerBuilder->build();
@@ -60,8 +62,16 @@ class App
         $app = AppFactory::create();
         $app->setBasePath('/cosmos');
 
+        // Middleware
         $app->addRoutingMiddleware();
         $app->addErrorMiddleware(true, true, true);
+        $app->add(TwigMiddleware::createFromContainer($app, Twig::class));
+
+        // --- PUBLIC DOCUMENTATION ROUTES ---
+        // 1. Interactive Swagger UI
+        $app->get('/swagger-ui', [ApiController::class, 'swaggerUi']);
+        // 2. Raw OpenAPI Specification JSON file (required by the UI)
+        $app->get('/openapi.json', [ApiController::class, 'swaggerJson']);
 
         // --- API Routes (Authenticated) ---
         $app->group('/products', function (RouteCollectorProxy $group) {
