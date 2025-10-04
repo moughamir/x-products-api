@@ -1,11 +1,10 @@
 <?php
-// bin/tackle.php (CLI Runner for Product Processor - Directory Mode)
+// bin/tackle.php
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Fix: Disable output buffering and enable flushing for real-time logging
 if (ob_get_level()) {
     ob_end_clean();
 }
@@ -17,19 +16,24 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use App\Services\ProductProcessor;
 
-$config = require __DIR__ . '/../config/app.php';
-// IMPORTANT: Point to the directory containing individual product JSON files
-$jsonDir = __DIR__ . '/../data/json/products_by_id';
+// LOAD CONFIGURATION FILES
+$appConfig = require __DIR__ . '/../config/app.php';
+$dbConfig = require __DIR__ . '/../config/database.php';
+
+// CLI needs both the app and db configurations
+$config = array_merge($appConfig, $dbConfig);
+
+// Path fix: Reference the single products.json file (adjust this if you use the nested JSON structure)
+$jsonFilePath = __DIR__ . '/../data/products.json';
 
 echo "\n========================================\n";
-echo "Starting Product Processor CLI Tool (Directory Mode)...\n";
-echo "Processing files in: {$jsonDir}\n";
+echo "Starting Product Processor CLI Tool...\n";
 echo "Timestamp: " . date('Y-m-d H:i:s') . "\n";
+echo "Database Target: " . $config['db_file'] . "\n";
 echo "========================================\n";
 
 try {
-    // Pass the directory path to the processor
-    $processor = new ProductProcessor($jsonDir, $config);
+    $processor = new ProductProcessor($jsonFilePath, $config);
     $result = $processor->process();
 
     echo "\n=== Processing Final Summary ===\n";
