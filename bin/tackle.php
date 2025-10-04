@@ -5,6 +5,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+// Ensure output is immediate for CLI visibility
 if (ob_get_level()) {
     ob_end_clean();
 }
@@ -23,17 +24,20 @@ $dbConfig = require __DIR__ . '/../config/database.php';
 // CLI needs both the app and db configurations
 $config = array_merge($appConfig, $dbConfig);
 
-// Path fix: Reference the single products.json file (adjust this if you use the nested JSON structure)
-$jsonFilePath = __DIR__ . '/../data/products.json';
+// FIX: Path now references the DIRECTORY containing individual JSON files
+$jsonDirPath = __DIR__ . '/../data/json/products_by_id';
 
 echo "\n========================================\n";
 echo "Starting Product Processor CLI Tool...\n";
 echo "Timestamp: " . date('Y-m-d H:i:s') . "\n";
 echo "Database Target: " . $config['db_file'] . "\n";
+// Display the new source directory path
+echo "Product Source Dir: " . $jsonDirPath . "\n";
 echo "========================================\n";
 
 try {
-    $processor = new ProductProcessor($jsonFilePath, $config);
+    // Pass the DIRECTORY path to the processor
+    $processor = new ProductProcessor($jsonDirPath, $config);
     $result = $processor->process();
 
     echo "\n=== Processing Final Summary ===\n";
@@ -42,8 +46,7 @@ try {
     echo "Product types found: " . count($result['product_types']) . "\n";
 
 } catch (\Exception $e) {
-    echo "\nFATAL ERROR: Processing failed at " . date('Y-m-d H:i:s') . "\n";
+    echo "\nFATAL ERROR: Processing failed.\n";
     echo "Message: " . $e->getMessage() . "\n";
-    echo "File: " . $e->getFile() . " on line " . $e->getLine() . "\n";
     exit(1);
 }
