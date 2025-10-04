@@ -1,14 +1,13 @@
-# .htaccess (Place this in the /cosmos directory)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
 
-RewriteEngine On
+    # Simpler RewriteBase without slashes
+    RewriteBase /cosmos
 
-# Ensure Authorization headers (for API Key) are passed to PHP
+    # Do not rewrite files or directories that physically exist
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
 
-RewriteCond %{HTTP:Authorization} .
-RewriteRule .\* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-
-# If the request is not for a real file or directory, route it to index.php
-
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [QSA,L]
+    # Rewrite everything else to index.php
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>

@@ -79,7 +79,11 @@ class App
 
         // API Routes (Grouped for Middleware)
         $apiKeyMiddleware = new ApiKeyMiddleware($config['api_key']);
-
+        $app->get('/', function ($request, $response, $args) {
+            // This is the route that handles the base URL: /cosmos/
+            $response->getBody()->write("Welcome to the X-Products API!");
+            return $response;
+        });
         $app->group('/products', function (RouteCollectorProxy $group) {
             $group->get('[/]', [ApiController::class, 'getProducts']);
             $group->get('/search', [ApiController::class, 'searchProducts']);

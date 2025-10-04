@@ -270,3 +270,19 @@ echo "   Set files to 644."
 echo -e "\n--- Setup Complete ---"
 echo "All required file permissions have been set."
 ```
+
+
+total 52
+drwxr-xr-x 8 u800171071 o1007194376 4096 Oct  4 16:39 .
+drwxr-xr-x 9 u800171071 o1007194376 4096 Oct  4 16:39 ..
+drwxr-xr-x 2 u800171071 o1007194376 4096 Oct  4 16:45 bin
+-rw-r--r-- 1 u800171071 o1007194376  208 Oct  4 16:39 clear_opcache.php
+-rw-r--r-- 1 u800171071 o1007194376  616 Oct  4 16:39 composer.json
+drwxr-xr-x 2 u800171071 o1007194376 4096 Oct  4 16:39 config
+drwxrwxr-x 3 u800171071 o1007194376 4096 Oct  4 16:39 data
+drwxr-xr-x 2 u800171071 o1007194376 4096 Oct  4 16:39 docs
+-rw-r--r-- 1 u800171071 o1007194376   22 Oct  4 16:39 .gitignore
+-rw-r--r-- 1 u800171071 o1007194376  414 Oct  4 16:39 .htaccess
+-rw-r--r-- 1 u800171071 o1007194376  115 Oct  4 16:39 index.php
+drwxr-xr-x 6 u800171071 o1007194376 4096 Oct  4 16:39 src
+drwxr-xr-x 2 u800171071 o1007194376 4096 Oct  4 16:39 templates
