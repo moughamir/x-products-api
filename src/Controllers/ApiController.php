@@ -44,15 +44,11 @@ class ApiController
      * path="/products",
      * summary="Retrieves a paginated list of all products (limited fields).",
      * @OA\Parameter(name="page", in="query", required=false, @OA\Schema(type="integer", default="1")),
-     * @OA\Parameter(name="limit", in="query", required=false, @OA\Schema(type="integer", default="50")),
-     * @OA\Parameter(name="fields", in="query", required=false, description="Comma-separated fields to return (e.g., id,title,price). '*' for all fields.", @OA\Schema(type="string", default="*")),
-     * @OA\Parameter(name="format", in="query", required=false, description="Output format.", @OA\Schema(type="string", enum={"json", "msgpack"}, default="json")),
-     * @OA\Response(
-     * response=200,
-     * description="A list of products with pagination metadata.",
-     * @OA\JsonContent(ref="#/components/schemas/ProductList")
-     * ),
-     * security={{"ApiKeyAuth": {}}}
+     * @OA\Parameter(name="limit", in="query", required=false, @OA\Schema(type="integer", default="50", maximum="100")),
+     * @OA\Parameter(name="fields", in="query", required=false, @OA\Schema(type="string", default="*", example="id,title,price")),
+     * @OA\Parameter(name="format", in="query", required=false, @OA\Schema(type="string", enum={"json", "msgpack"}, default="json")),
+     * @OA\Response(response=200, description="List of products.", @OA\JsonContent(ref="#/components/schemas/ProductList")),
+     * @OA\Response(response="default", description="Error response.")
      * )
      */
     public function getProducts(Request $request, Response $response, array $args): Response
@@ -64,8 +60,55 @@ class ApiController
         $format = $params['format'] ?? 'json';
 
         $products = $this->productService->getProducts($page, $limit, $fieldsParam);
-        $total = $this->productService->getTotalProducts();
+        $products = $this->attachImagesToProducts($products);
 
+        $total = $this->productService->getTotalProducts();
+        $data = [
+            'products' => $products,
+            'meta' => [
+                'total' => (int) $total,
+                'page' => $page,
+                'limit' => $limit,
+                'total_pages' => ceil($total / $limit)
+            ]
+        ];
+
+        return $this->outputResponse($response, $data, $format);
+    }
+
+    /**
+     * @OA\Get(
+     * path="/products/search",
+     * summary="Performs a Full-Text Search (FTS) for products.",
+     * security={{"ApiKeyAuth": {}}},
+     * @OA\Parameter(name="q", in="query", required=true, description="Search query string.", @OA\Schema(type="string")),
+     * @OA\Parameter(name="page", in="query", required=false, @OA\Schema(type="integer", default="1")),
+     * @OA\Parameter(name="limit", in="query", required=false, @OA\Schema(type="integer", default="50", maximum="100")),
+     * @OA\Parameter(name="fields", in="query", required=false, @OA\Schema(type="string", default="*", example="id,title,price")),
+     * @OA\Parameter(name="format", in="query", required=false, @OA\Schema(type="string", enum={"json", "msgpack"}, default="json")),
+     * @OA\Response(response=200, description="List of products matching the search query.", @OA\JsonContent(ref="#/components/schemas/ProductList")),
+     * @OA\Response(response="default", description="Error response.")
+     * )
+     */
+    public function searchProducts(Request $request, Response $response, array $args): Response
+    {
+        $params = $request->getQueryParams();
+        $query = $params['q'] ?? '';
+        $page = max(1, (int) ($params['page'] ?? 1));
+        $limit = min(100, max(1, (int) ($params['limit'] ?? 50)));
+        $fieldsParam = $params['fields'] ?? '*';
+        $format = $params['format'] ?? 'json';
+
+        if (empty($query)) {
+            $data = ['error' => 'Search query (q) parameter is required.'];
+            $response = $response->withStatus(400);
+            return $this->outputResponse($response, $data, $format);
+        }
+
+        $products = $this->productService->searchProducts($query, $page, $limit, $fieldsParam);
+        $products = $this->attachImagesToProducts($products);
+
+        $total = $this->productService->getTotalSearchProducts($query);
         $data = [
             'products' => $products,
             'meta' => [
@@ -82,16 +125,13 @@ class ApiController
     /**
      * @OA\Get(
      * path="/products/{key}",
-     * summary="Retrieves a single product by ID or handle.",
-     * @OA\Parameter(name="key", in="path", required=true, description="Product ID (int) or handle (string).", @OA\Schema(type="string")),
-     * @OA\Parameter(name="format", in="query", required=false, description="Output format.", @OA\Schema(type="string", enum={"json", "msgpack"}, default="json")),
-     * @OA\Response(
-     * response=200,
-     * description="A single product object, including all variants, images, and options.",
-     * @OA\JsonContent(ref="#/components/schemas/Product")
-     * ),
+     * summary="Retrieves a single product by ID or handle (full data).",
+     * security={{"ApiKeyAuth": {}}},
+     * @OA\Parameter(name="key", in="path", required=true, description="Product ID or Handle.", @OA\Schema(type="string", example="1234567890")),
+     * @OA\Parameter(name="format", in="query", required=false, @OA\Schema(type="string", enum={"json", "msgpack"}, default="json")),
+     * @OA\Response(response=200, description="The requested product.", @OA\JsonContent(ref="#/components/schemas/Product")),
      * @OA\Response(response=404, description="Product not found."),
-     * security={{"ApiKeyAuth": {}}}
+     * @OA\Response(response="default", description="Error response.")
      * )
      */
     public function getProductOrHandle(Request $request, Response $response, array $args): Response
@@ -108,73 +148,22 @@ class ApiController
             return $this->outputResponse($response, $data, $format);
         }
 
-        $product = $this->attachImagesToProducts([$product])[0];
-        $data = ['product' => $product];
+        $product->images = $this->imageService->getProductImages($product->id);
 
-        return $this->outputResponse($response, $data, $format);
-    }
-
-    /**
-     * @OA\Get(
-     * path="/products/search",
-     * summary="Performs a full-text search across products.",
-     * @OA\Parameter(name="q", in="query", required=true, description="The search query string.", @OA\Schema(type="string")),
-     * @OA\Parameter(name="page", in="query", required=false, @OA\Schema(type="integer", default="1")),
-     * @OA\Parameter(name="limit", in="query", required=false, @OA\Schema(type="integer", default="50")),
-     * @OA\Parameter(name="format", in="query", required=false, description="Output format.", @OA\Schema(type="string", enum={"json", "msgpack"}, default="json")),
-     * @OA\Response(
-     * response=200,
-     * description="A paginated list of products matching the search query.",
-     * @OA\JsonContent(ref="#/components/schemas/ProductList")
-     * ),
-     * security={{"ApiKeyAuth": {}}}
-     * )
-     */
-    public function searchProducts(Request $request, Response $response, array $args): Response
-    {
-        $params = $request->getQueryParams();
-        $query = $params['q'] ?? '';
-        $page = max(1, (int) ($params['page'] ?? 1));
-        $limit = min(100, max(1, (int) ($params['limit'] ?? 50)));
-        $format = $params['format'] ?? 'json';
-
-        if (empty($query)) {
-            $data = ['error' => 'Search query (q) parameter is required.'];
-            $response = $response->withStatus(400);
-            return $this->outputResponse($response, $data, $format);
-        }
-
-        $result = $this->productService->searchProducts($query, $page, $limit);
-        $products = $result['products'];
-        $total = $result['total'];
-
-        $data = [
-            'products' => $products,
-            'meta' => [
-                'total' => (int) $total,
-                'page' => $page,
-                'limit' => $limit,
-                'total_pages' => ceil($total / $limit)
-            ]
-        ];
-
-        return $this->outputResponse($response, $data, $format);
+        return $this->outputResponse($response, ['product' => $product], $format);
     }
 
     /**
      * @OA\Get(
      * path="/collections/{handle}",
-     * summary="Retrieves products for a specific collection handle (e.g., featured, sale).",
-     * @OA\Parameter(name="handle", in="path", required=true, description="The collection handle (e.g., 'all', 'featured', 'sale').", @OA\Schema(type="string")),
+     * summary="Retrieves products from a specific collection handle.",
+     * security={{"ApiKeyAuth": {}}},
+     * @OA\Parameter(name="handle", in="path", required=true, description="Collection handle (e.g., all, featured, sale).", @OA\Schema(type="string", example="featured")),
      * @OA\Parameter(name="page", in="query", required=false, @OA\Schema(type="integer", default="1")),
-     * @OA\Parameter(name="limit", in="query", required=false, @OA\Schema(type="integer", default="50")),
-     * @OA\Parameter(name="fields", in="query", required=false, description="Comma-separated fields to return (e.g., id,title,price). '*' for all fields.", @OA\Schema(type="string", default="*")),
-     * @OA\Parameter(name="format", in="query", required=false, description="Output format.", @OA\Schema(type="string", enum={"json", "msgpack"}, default="json")),
-     * @OA\Response(
-     * response=200,
-     * description="A paginated list of products in the specified collection.",
-     * @OA\JsonContent(ref="#/components/schemas/ProductList")
-     * ),
+     * @OA\Parameter(name="limit", in="query", required=false, @OA\Schema(type="integer", default="50", maximum="100")),
+     * @OA\Parameter(name="fields", in="query", required=false, @OA\Schema(type="string", default="*", example="id,title,price")),
+     * @OA\Parameter(name="format", in="query", required=false, @OA\Schema(type="string", enum={"json", "msgpack"}, default="json")),
+     * @OA\Response(response=200, description="List of collection products.", @OA\JsonContent(ref="#/components/schemas/ProductList")),
      * @OA\Response(response=404, description="Collection handle is not supported.")
      * )
      */
@@ -197,7 +186,6 @@ class ApiController
 
         $products = $this->attachImagesToProducts($products);
 
-        // Metadata handling based on whether the collection is paginated (e.g., 'featured' is not)
         $data = ['products' => $products];
 
         $total = $this->productService->getTotalCollectionProducts($collectionHandle);
@@ -214,16 +202,14 @@ class ApiController
     /**
      * @OA\Get(
      * path="/cdn/{path}",
-     * summary="Reverse proxy for external images.",
-     * description="Proxies images from the external CDN (e.g., cdn.shopify.com).",
-     * @OA\Parameter(name="path", in="path", required=true, description="The URL path segment of the image to fetch.", @OA\Schema(type="string")),
-     * @OA\Response(response=200, description="Image streamed successfully.", @OA\MediaType(mediaType="image/*", @OA\Schema(type="string", format="binary"))),
+     * summary="Image reverse proxy to fetch and serve images from an external CDN.",
+     * @OA\Parameter(name="path", in="path", required=true, description="Image path on the external CDN.", @OA\Schema(type="string")),
+     * @OA\Response(response=200, description="Image stream."),
      * @OA\Response(response=404, description="Image not found."),
      * )
      */
     public function imageProxy(Request $request, Response $response, array $args): Response
     {
-        // This assumes ImageProxy is accessible via the ProductService or another mechanism
         $imageProxyService = $this->productService->getImageProxyService();
         return $imageProxyService->proxy($request, $response, $args);
     }
