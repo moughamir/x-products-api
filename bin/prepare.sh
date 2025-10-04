@@ -51,7 +51,7 @@ echo "   Setting execute permission for bin/tackle.php..."
 chmod 755 bin/tackle.php
 echo "   Set permissions for bin/tackle.php to 755."
 
----
+echo ---
 ## 4. General Permissions for Source Code
 
 echo -e "\n4. Setting secure general permissions for source code (src/ and config/)..."
