@@ -57,24 +57,74 @@ class ProductProcessor
 
     private function applyPricingLogic(): void
     {
-        echo "--> [LOGIC] Applying pricing/inventory logic...\n";
+        echo "--> [LOGIC] Applying pricing and scoring logic...\n";
 
-        // 1. Set `compare_at_price` to NULL where it's less than or equal to `price`
-        $this->db->exec("UPDATE products SET compare_at_price = NULL WHERE compare_at_price <= price");
-        echo "    - Cleared non-sale compare_at_price values.\n";
+        // ====================================================================
+        // 1. SET IN_STOCK STATUS (MODIFIED: Always In Stock)
+        // Per requirement: All products should be marked in-stock regardless of inventory data.
+        // ====================================================================
+        echo "--> [LOGIC] FORCING all products to be marked 'in_stock = 1' (true).\n";
+        $this->db->exec("UPDATE products SET in_stock = 1");
 
-        // 2. Set `in_stock` based on total inventory
-        $this->db->exec("UPDATE products SET in_stock = 0 WHERE in_stock IS NULL OR in_stock < 1");
-        $this->db->exec("UPDATE products SET in_stock = 1 WHERE in_stock >= 1");
-        echo "    - Set `in_stock` (1/0) based on inventory logic.\n";
 
-        // 3. Delete products that are out of stock (optional step for a clean dataset)
-        $deletedCount = $this->db->exec("DELETE FROM products WHERE in_stock = 0");
-        echo "    - Deleted {$deletedCount} out-of-stock products.\n";
+        // ====================================================================
+        // 2. PRODUCT DELETION LOGIC (MODIFIED: REMOVED/SKIPPED)
+        // Per requirement: "we shouldnt remove products".
+        // ====================================================================
+        /*
+        // ORIGINAL DELETION LOGIC (NOW COMMENTED OUT):
+        // $this->db->exec("DELETE FROM products WHERE in_stock = 0");
+        */
+        echo "--> [LOGIC] Product deletion logic has been SKIPPED (products are not removed).\n";
 
-        echo "--> [LOGIC] Logic applied.\n";
+
+        // ====================================================================
+        // 3. APPLY PRICING LOGIC (Set 'sale' category)
+        // ====================================================================
+        echo "--> [LOGIC] Applying sale price logic...\n";
+        // Set 'sale' category: compare_at_price must be non-null and greater than price
+        $this->db->exec("
+            UPDATE products
+            SET category = 'sale'
+            WHERE compare_at_price IS NOT NULL AND compare_at_price > price
+        ");
+
+        // Clear category for products that no longer meet the 'sale' condition
+        $this->db->exec("
+            UPDATE products
+            SET category = NULL
+            WHERE category = 'sale'
+              AND (compare_at_price IS NULL OR compare_at_price <= price)
+        ");
+
+
+        // ====================================================================
+        // 4. APPLY BESTSELLER/TRENDING LOGIC (Dummy/Example Scoring)
+        // ====================================================================
+        // NOTE: In a real-world scenario, you would calculate these scores
+        // based on sales data, page views, etc. Here we use an example.
+
+        // Example 1: Set a random bestseller score for demonstration (0.0 to 1.0)
+        echo "--> [LOGIC] Applying dummy bestseller scores (random for now)...\n";
+        $this->db->exec("
+            UPDATE products
+            SET bestseller_score = ABS(RANDOM() % 100) / 100.0
+        ");
+
+        // Example 2: Tag a few random products as 'featured'
+        echo "--> [LOGIC] Tagging random products as 'featured'...\n";
+        $this->db->exec("
+            UPDATE products
+            SET tags = tags || ',featured'
+            WHERE id IN (
+                SELECT id FROM products ORDER BY RANDOM() LIMIT 5
+            )
+            AND tags NOT LIKE '%featured%'
+        ");
+
+
+        echo "--> [LOGIC] Pricing and scoring logic complete.\n";
     }
-
     private function getDomainData(array $product): array
     {
         $domain = 'unknown';
