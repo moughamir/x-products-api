@@ -37,7 +37,7 @@
       "@clear-cache"
     ],
     "process:products": "php bin/tackle.php",
-    "docs:generate": "vendor/bin/openapi --output openapi.json src/",
+    "docs:generate": "vendor/bin/openapi --output openapi.json src/OpenApi.php src/Controllers/",
     "clear-cache": "php clear_opcache.php"
   }
 }
