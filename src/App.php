@@ -26,7 +26,7 @@ class App
         // Create DI Container
         $containerBuilder = new ContainerBuilder();
         $containerBuilder->addDefinitions([
-            'source_dir' => __DIR__ . '/Controllers', // ADDED: For OpenAPI Generator to scan
+            'source_dir' => __DIR__ . '/Controllers',
 
             PDO::class => function() use ($dbConfig) {
                 // Path fix: Use the DB file path from the dedicated config file

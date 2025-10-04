@@ -1,13 +1,15 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /cosmos/
 
-    # Simpler RewriteBase without slashes
-    RewriteBase /cosmos
+    # CRITICAL: Exclude openapi.json from being routed to index.php
+    # This ensures the static file is served directly by the web server (LiteSpeed).
+    RewriteRule ^openapi\.json$ - [L]
 
-    # Do not rewrite files or directories that physically exist
+    # Do not rewrite if the request is for a physical file or directory
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
 
-    # Rewrite everything else to index.php
+    # Route all other non-existent paths to index.php
     RewriteRule ^ index.php [QSA,L]
 </IfModule>

@@ -286,3 +286,6 @@ drwxr-xr-x 2 u800171071 o1007194376 4096 Oct  4 16:39 docs
 -rw-r--r-- 1 u800171071 o1007194376  115 Oct  4 16:39 index.php
 drwxr-xr-x 6 u800171071 o1007194376 4096 Oct  4 16:39 src
 drwxr-xr-x 2 u800171071 o1007194376 4096 Oct  4 16:39 templates
+
+
+chmod 644 openapi.json
