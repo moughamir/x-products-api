@@ -1,51 +1,51 @@
 <?php
 // src/Services/ProductProcessor.php
-// CLI script to process and insert products from a large JSON file into SQLite DB
 namespace App\Services;
 
 use PDO;
 
 // Set high limits for the CLI script
-ini_set('memory_limit', '-1');
-ini_set('max_execution_time', 0);
+ini_set('memory_limit', '-1'); // Set to -1 for unlimited memory
+ini_set('max_execution_time', 0); // Unlimited execution time
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 /**
  * Main Product Processor Class
- * Handles database setup and streaming insertion from a JSON file.
  */
 class ProductProcessor
 {
     private PDO $db;
-    private string $jsonFilePath;
+    // Changed property name to reflect directory path instead of file path
+    private string $jsonDirPath;
+    private array $config; // Keep config accessible
 
-    public function __construct(string $jsonFilePath, array $config)
+    public function __construct(string $jsonDirPath, array $config)
     {
-        $this->jsonFilePath = $jsonFilePath;
+        $this->jsonDirPath = $jsonDirPath;
+        $this->config = $config;
         $this->setupDatabase($config['db_file']);
     }
 
     private function setupDatabase(string $dbFile): void
     {
-        echo "--> [SETUP] Starting database setup...\n";
+        echo "--> [SETUP] Starting database setup...\\n";
         $dbDir = dirname($dbFile);
         if (!is_dir($dbDir)) {
             mkdir($dbDir, 0755, true);
         }
-        $this->db = new PDO("sqlite:" . $dbFile);
+
+        // Use the db file from the config file, which is loaded in tackle.php
+        $dbConfig = require __DIR__ . '/../../config/database.php';
+        $this->db = new PDO("sqlite:" . $dbConfig['db_file']);
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        // Drop tables for a fresh run
+        // Drop existing tables for a clean import
         $this->db->exec("DROP TABLE IF EXISTS products");
-        $this->db->exec("DROP TABLE IF EXISTS products_fts");
         $this->db->exec("DROP TABLE IF EXISTS product_images");
-        $this->db->exec("DROP TABLE IF EXISTS product_variants");
-        $this->db->exec("DROP TABLE IF EXISTS product_options");
+        $this->db->exec("DROP TABLE IF EXISTS products_fts"); // Full Text Search
 
-
-        // --- PRODUCTS Table ---
         $this->db->exec("
             CREATE TABLE products (
                 id INTEGER PRIMARY KEY,
@@ -54,34 +54,20 @@ class ProductProcessor
                 body_html TEXT,
                 vendor TEXT,
                 product_type TEXT,
-                tags TEXT,
-                price REAL,
-                compare_at_price REAL,
-                in_stock BOOLEAN,
-                rating REAL,
-                review_count INTEGER,
-                bestseller_score REAL,
                 created_at TEXT,
                 updated_at TEXT,
-                published_at TEXT,
-                raw_json TEXT
-            )
+                tags TEXT,
+                source_domain TEXT,
+                price REAL,
+                compare_at_price REAL,
+                in_stock INTEGER,
+                category TEXT,
+                rating REAL DEFAULT 0.0,
+                review_count INTEGER DEFAULT 0,
+                bestseller_score REAL DEFAULT 0.0
+            );
         ");
 
-        // --- FTS Table ---
-        $this->db->exec("
-            CREATE VIRTUAL TABLE products_fts USING fts5(
-                title,
-                body_html,
-                vendor,
-                product_type,
-                tags,
-                content='products',
-                content_rowid='id'
-            )
-        ");
-
-        // --- RELATED DATA Tables ---
         $this->db->exec("
             CREATE TABLE product_images (
                 id INTEGER PRIMARY KEY,
@@ -92,152 +78,237 @@ class ProductProcessor
                 height INTEGER,
                 created_at TEXT,
                 updated_at TEXT,
-                FOREIGN KEY (product_id) REFERENCES products(id)
-            )
+                FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+            );
         ");
 
+        // FTS5 table for fast searching on title and body
         $this->db->exec("
-            CREATE TABLE product_variants (
-                id INTEGER PRIMARY KEY,
-                product_id INTEGER,
-                title TEXT,
-                sku TEXT,
-                price REAL,
-                compare_at_price REAL,
-                available BOOLEAN,
-                grams INTEGER,
-                position INTEGER,
-                option1 TEXT,
-                option2 TEXT,
-                option3 TEXT,
-                created_at TEXT,
-                updated_at TEXT,
-                FOREIGN KEY (product_id) REFERENCES products(id)
-            )
+            CREATE VIRTUAL TABLE products_fts USING fts5(
+                title,
+                body_html,
+                content='products',
+                content_rowid='id'
+            );
         ");
 
-        $this->db->exec("
-            CREATE TABLE product_options (
-                id INTEGER PRIMARY KEY,
-                product_id INTEGER,
-                name TEXT,
-                position INTEGER,
-                \"values\" TEXT, -- Quoted to avoid SQLite reserved keyword
-                FOREIGN KEY (product_id) REFERENCES products(id)
-            )
-        ");
-
-        echo "--> [SETUP] Database setup complete. All tables created.\n";
+        echo "--> [SETUP] Database schema created successfully.\\n";
     }
 
     /**
-     * The Generator uses native PHP functions to stream products
-     * character-by-character to bypass I/O stalls and corruption issues.
+     * Helper to sanitize and clean HTML content.
      */
-    private function streamProductsFromFile(string $jsonFilePath): \Generator
+    private function sanitizeHtml(string $html): string
     {
-        if (!file_exists($jsonFilePath)) {
-            throw new \Exception("Product JSON file not found at: " . $jsonFilePath);
+        // Simple sanitization for PHP context
+        $allowedTags = '<a><p><br><strong><b><em><i><ul><ol><li><h1><h2><h3><h4><h5><h6>';
+        // Remove potentially malicious tags, keeping basic formatting
+        return strip_tags($html, $allowedTags);
+    }
+
+    /**
+     * Cleans up the image source URL and extracts the base domain.
+     */
+    private function processImageUrl(string $src): array
+    {
+        $domain = 'unknown';
+        $path = $src;
+
+        // Try to parse the URL
+        if ($parsed = parse_url($src)) {
+            $domain = $parsed['host'] ?? 'unknown';
+            $path = $parsed['path'] ?? '';
+
+            // Clean up common CDN path structure for local proxying
+            // This is crucial for matching the expected structure of the ImageProxy route
+            $path = preg_replace('/^\/s\/files\/1\/[^\/]+\/files\//', '', $path);
         }
 
-        // Dummy generator for brevity, replace with actual streaming logic
-        yield from [
-            ['id' => 1, 'title' => 'Product A', 'handle' => 'product-a', 'body_html' => '...', 'price' => 10.0, 'tags' => 'tag1,tag2', 'vendor' => 'VendorX'],
-            ['id' => 2, 'title' => 'Product B', 'handle' => 'product-b', 'body_html' => '...', 'price' => 20.0, 'tags' => 'tag3', 'vendor' => 'VendorY'],
-            // ... actual products from file
+        return [
+            'domain' => $domain,
+            'path' => $path
         ];
     }
 
-    // --- Data Insertion ---
-
-    private function insertProduct(array $product): void
-    {
-        // NOTE: This insertion is highly simplified for this code output.
-        // A complete implementation would handle all related tables (images, variants, options) here.
-
-        $stmt = $this->db->prepare("
-            INSERT INTO products (
-                id, title, handle, body_html, vendor, product_type, tags, price,
-                compare_at_price, in_stock, created_at, updated_at, published_at, raw_json
-            ) VALUES (
-                :id, :title, :handle, :body_html, :vendor, :product_type, :tags, :price,
-                :compare_at_price, :in_stock, :created_at, :updated_at, :published_at, :raw_json
-            )
-        ");
-
-        $stmt->bindValue(':id', $product['id']);
-        $stmt->bindValue(':title', $product['title'] ?? '');
-        $stmt->bindValue(':handle', $product['handle'] ?? '');
-        $stmt->bindValue(':body_html', $product['body_html'] ?? '');
-        $stmt->bindValue(':vendor', $product['vendor'] ?? '');
-        $stmt->bindValue(':product_type', $product['product_type'] ?? '');
-        $stmt->bindValue(':tags', $product['tags'] ?? '');
-        $stmt->bindValue(':price', $product['price'] ?? 0.0);
-        $stmt->bindValue(':compare_at_price', $product['compare_at_price'] ?? null);
-        $stmt->bindValue(':in_stock', (int)($product['available'] ?? 1));
-        $stmt->bindValue(':created_at', $product['created_at'] ?? date('c'));
-        $stmt->bindValue(':updated_at', $product['updated_at'] ?? date('c'));
-        $stmt->bindValue(':published_at', $product['published_at'] ?? date('c'));
-        $stmt->bindValue(':raw_json', json_encode($product));
-
-        $stmt->execute();
-
-        // Insert into FTS table
-        $stmtFTS = $this->db->prepare("INSERT INTO products_fts (rowid, title, body_html, vendor, product_type, tags) VALUES (:id, :title, :body_html, :vendor, :product_type, :tags)");
-        $stmtFTS->bindValue(':id', $product['id']);
-        $stmtFTS->bindValue(':title', $product['title'] ?? '');
-        $stmtFTS->bindValue(':body_html', $product['body_html'] ?? '');
-        $stmtFTS->bindValue(':vendor', $product['vendor'] ?? '');
-        $stmtFTS->bindValue(':product_type', $product['product_type'] ?? '');
-        $stmtFTS->bindValue(':tags', $product['tags'] ?? '');
-        $stmtFTS->execute();
-    }
-
+    /**
+     * Applies pricing logic based on a simplified formula (e.g., 10% bestseller boost).
+     */
     private function applyPricingLogic(): void
     {
-        echo "--> [LOGIC] Applying pricing/rating logic...\n";
-        // Logic to calculate bestseller_score, average price, etc.
-        $this->db->exec("UPDATE products SET bestseller_score = (rating * review_count) / price WHERE review_count > 0");
-        echo "--> [LOGIC] Pricing/rating logic complete.\n";
+        echo "--> [DB] Applying pricing/scoring logic...\\n";
+
+        // Example: Apply a simple bestseller score based on number of images
+        $this->db->exec("
+            UPDATE products
+            SET bestseller_score = (
+                SELECT COUNT(t2.id) * 0.1
+                FROM product_images t2
+                WHERE t2.product_id = products.id
+            ) + 1.0; -- Base score of 1.0
+        ");
+
+        echo "--> [DB] Pricing/scoring logic applied.\\n";
     }
 
-    // --- Main Processor ---
-
+    /**
+     * Main processing method that reads individual JSON files from the directory.
+     */
     public function process(): array
     {
+        if (!is_dir($this->jsonDirPath)) {
+            throw new \Exception("Product JSON directory not found: {$this->jsonDirPath}");
+        }
+
+        // Get all .json files in the directory
+        $files = glob("{$this->jsonDirPath}/*.json");
+        $fileCount = count($files);
+
+        if ($fileCount === 0) {
+            echo "--> [INFO] No JSON files found in {$this->jsonDirPath}. Skipping import.\\n";
+            return [
+                'total_products' => 0,
+                'domains' => [],
+                'product_types' => []
+            ];
+        }
+
+        echo "--> [INFO] Found {$fileCount} product files to process.\\n";
+
         $productCount = 0;
         $domains = [];
         $productTypes = [];
-        $batchSize = 1000;
+        $batchSize = 100;
+        $fileCounter = 0;
+
+        $productStmt = $this->db->prepare("
+            INSERT INTO products (
+                id, title, handle, body_html, vendor, product_type, created_at,
+                updated_at, tags, source_domain, price, compare_at_price, in_stock, category
+            ) VALUES (
+                :id, :title, :handle, :body_html, :vendor, :product_type, :created_at,
+                :updated_at, :tags, :source_domain, :price, :compare_at_price, :in_stock, :category
+            );
+        ");
+
+        $imageStmt = $this->db->prepare("
+            INSERT INTO product_images (
+                id, product_id, position, src, width, height, created_at, updated_at
+            ) VALUES (
+                :id, :product_id, :position, :src, :width, :height, :created_at, :updated_at
+            );
+        ");
+
+        $ftsStmt = $this->db->prepare("
+            INSERT INTO products_fts (rowid, title, body_html) VALUES (:rowid, :title, :body_html);
+        ");
+
 
         try {
             $this->db->beginTransaction();
 
-            foreach ($this->streamProductsFromFile($this->jsonFilePath) as $product) {
-                $this->insertProduct($product);
+            foreach ($files as $filePath) {
+                $fileCounter++;
+                $jsonContent = file_get_contents($filePath);
+                $product = json_decode($jsonContent, true);
+
+                if (empty($product) || !is_array($product) || !isset($product['id'])) {
+                    echo "--> [WARN] Skipping invalid or empty JSON file: " . basename($filePath) . "\\n";
+                    continue;
+                }
+
                 $productCount++;
 
-                if ($productCount % $batchSize === 0) {
-                    $this->db->commit();
-                    echo "--> [DB] Commit at product #{$productCount}\n";
-                    $this->db->beginTransaction();
+                // --- 1. Product Insertion ---
+                $title = $product['title'] ?? 'Untitled';
+                $handle = $product['handle'] ?? 'no-handle';
+                $body = $this->sanitizeHtml($product['body_html'] ?? '');
+
+                // Simple price logic: use first variant price if available
+                $price = $product['variants'][0]['price'] ?? 0.0;
+                $compareAtPrice = $product['variants'][0]['compare_at_price'] ?? null;
+                $inStock = ($product['variants'][0]['available'] ?? false) ? 1 : 0;
+
+                // Process domain for proxying
+                $domainData = $this->processImageUrl($product['images'][0]['src'] ?? '');
+
+                // Convert tags array to comma-separated string
+                $tagsString = is_array($product['tags'] ?? []) ? implode(', ', $product['tags']) : ($product['tags'] ?? '');
+
+                $productStmt->execute([
+                    ':id' => $product['id'],
+                    ':title' => $title,
+                    ':handle' => $handle,
+                    ':body_html' => $body,
+                    ':vendor' => $product['vendor'] ?? null,
+                    ':product_type' => $product['product_type'] ?? null,
+                    ':created_at' => $product['created_at'] ?? null,
+                    ':updated_at' => $product['updated_at'] ?? null,
+                    ':tags' => $tagsString,
+                    ':source_domain' => $domainData['domain'],
+                    ':price' => (float) $price,
+                    ':compare_at_price' => $compareAtPrice !== null ? (float) $compareAtPrice : null,
+                    ':in_stock' => $inStock,
+                    ':category' => null // Placeholder
+                ]);
+
+                // --- 2. FTS Indexing ---
+                $ftsStmt->execute([
+                    ':rowid' => $product['id'],
+                    ':title' => $title,
+                    ':body_html' => strip_tags($body)
+                ]);
+
+                // --- 3. Image Insertion ---
+                $imagePos = 0;
+                $currentImageId = $product['image']['id'] ?? 10000000 + $product['id']; // Fallback ID
+
+                foreach ($product['images'] ?? [] as $image) {
+                    $imagePos++;
+                    $imagePath = $this->processImageUrl($image['src'])['path'];
+
+                    // The ID for the image must be unique. Using a combination of a large offset and position.
+                    // If image['id'] is not present, we create a fallback ID.
+                    $imageId = $image['id'] ?? (100000000 + $product['id'] * 1000 + $imagePos);
+
+                    $imageStmt->execute([
+                        ':id' => $imageId,
+                        ':product_id' => $product['id'],
+                        ':position' => $imagePos,
+                        ':src' => $imagePath,
+                        ':width' => $image['width'] ?? null,
+                        ':height' => $image['height'] ?? null,
+                        ':created_at' => $image['created_at'] ?? null,
+                        ':updated_at' => $image['updated_at'] ?? null,
+                    ]);
                 }
 
                 // Log every product inserted
-                $productTitle = substr($product['title'] ?? 'N/A', 0, 50) . (strlen($product['title'] ?? '') > 50 ? '...' : '');
-                echo "--> [INSERT] Product #{$productCount}: ID={$product['id']} Title='{$productTitle}'\n";
+                $productTitle = substr($title, 0, 50) . (strlen($title) > 50 ? '...' : '');
+                echo "--> [INSERT] Product #{$fileCounter}/{$fileCount}: ID={$product['id']} Title='{$productTitle}'\\n";
 
-                // Track unique product types for final output
-                if (!empty($product['product_type']) && !in_array($product['product_type'], $productTypes)) {
-                    $productTypes[] = $product['product_type'];
+                // Track all unique product types and domains for final output
+                $productType = $product['product_type'] ?? '';
+                if (!empty($productType) && !in_array($productType, $productTypes)) {
+                    $productTypes[] = $productType;
+                }
+                if (!empty($domainData['domain']) && !in_array($domainData['domain'], $domains)) {
+                    $domains[] = $domainData['domain'];
+                }
+
+                // Commit batch
+                if ($fileCounter % $batchSize === 0) {
+                    $this->db->commit();
+                    $this->db->beginTransaction();
+                    echo "--> [DB] Batch of {$batchSize} committed. ({$fileCounter}/{$fileCount})\\n";
                 }
             }
 
-            echo "--> [DB] Finished inserting all {$productCount} initial records. Committing transaction...\n";
+            // Final commit for remaining records
+            echo "--> [DB] Finished inserting all {$productCount} initial records. Committing final transaction...\\n";
             $this->db->commit();
-            echo "--> [DB] Transaction committed successfully.\n";
+            echo "--> [DB] Transaction committed successfully.\\n";
         } catch (\Exception $e) {
-            echo "--> [ERROR] Processing failed. Rolling back transaction...\n";
+            echo "--> [ERROR] Processing failed. Rolling back transaction...\\n";
             $this->db->rollBack();
             throw $e;
         }

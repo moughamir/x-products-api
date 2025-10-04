@@ -1,5 +1,5 @@
 <?php
-// bin/tackle.php (CLI Runner for Product Processor)
+// bin/tackle.php (CLI Runner for Product Processor - Directory Mode)
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -18,16 +18,18 @@ require __DIR__ . '/../vendor/autoload.php';
 use App\Services\ProductProcessor;
 
 $config = require __DIR__ . '/../config/app.php';
-// IMPORTANT: Update this path to your actual JSON file
-$jsonFilePath = __DIR__ . '/../data/products.json';
+// IMPORTANT: Point to the directory containing individual product JSON files
+$jsonDir = __DIR__ . '/../data/json/products_by_id';
 
 echo "\n========================================\n";
-echo "Starting Product Processor CLI Tool...\n";
+echo "Starting Product Processor CLI Tool (Directory Mode)...\n";
+echo "Processing files in: {$jsonDir}\n";
 echo "Timestamp: " . date('Y-m-d H:i:s') . "\n";
 echo "========================================\n";
 
 try {
-    $processor = new ProductProcessor($jsonFilePath, $config);
+    // Pass the directory path to the processor
+    $processor = new ProductProcessor($jsonDir, $config);
     $result = $processor->process();
 
     echo "\n=== Processing Final Summary ===\n";
