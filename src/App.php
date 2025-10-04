@@ -6,13 +6,11 @@ namespace App;
 use Slim\Factory\AppFactory;
 use App\Controllers\ApiController;
 use App\Middleware\ApiKeyMiddleware;
-
 use App\Services\ImageProxy;
 use App\Services\ProductService;
 use App\Services\ImageService;
 use PDO;
 use Slim\Routing\RouteCollectorProxy;
-use DI\Container;
 use DI\ContainerBuilder;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -25,14 +23,11 @@ class App
         $config = require __DIR__ . '/../config/app.php';
         $dbConfig = require __DIR__ . '/../config/database.php';
 
-        // Create DI Container
         $containerBuilder = new ContainerBuilder();
         $containerBuilder->addDefinitions([
-            // PSR-7 Factories for Middleware/Response creation
             ResponseFactoryInterface::class => DI\create(Psr17Factory::class),
             StreamFactoryInterface::class => DI\create(Psr17Factory::class),
 
-            // PDO Database Connection
             PDO::class => function() use ($dbConfig) {
                 $dbFile = $dbConfig['db_file'];
                 $dbDir = dirname($dbFile);
@@ -41,43 +36,30 @@ class App
                 }
                 $pdo = new PDO("sqlite:" . $dbFile);
                 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                // Enable foreign key support if necessary
-                //$pdo->exec('PRAGMA foreign_keys = ON;');
                 return $pdo;
             },
 
-            // Services and Dependencies
-            ProductService::class => function($container) {
-                return new ProductService($container->get(PDO::class));
-            },
-            ImageService::class => function($container) {
-                return new ImageService($container->get(PDO::class));
-            },
-            ApiController::class => function($container) {
-                return new ApiController(
-                    $container->get(ProductService::class),
-                    $container->get(ImageService::class),
-                    $container->get('config')
-                );
-            },
+            ProductService::class => fn($container) => new ProductService($container->get(PDO::class)),
+            ImageService::class => fn($container) => new ImageService($container->get(PDO::class)),
 
-            // Pass configuration array explicitly to classes that need it
-            ImageProxy::class => function() use ($config) {
-                return new ImageProxy($config);
-            },
+            // ApiController now receives config to process Image URLs
+            ApiController::class => fn($container) => new ApiController(
+                $container->get(ProductService::class),
+                $container->get(ImageService::class),
+                $container->get('config')
+            ),
 
-            // Register config for use in other classes (e.g., ApiController)
+            // ImageProxy does NOT need cache config anymore
+            ImageProxy::class => fn() => new ImageProxy($config),
+
             'config' => $config
         ]);
 
         $container = $containerBuilder->build();
-
-        // Create app with the container
         AppFactory::setContainer($container);
         $app = AppFactory::create();
         $app->setBasePath('/cosmos');
 
-        // Middleware
         $app->addRoutingMiddleware();
         $app->addErrorMiddleware(true, true, true);
 
@@ -93,7 +75,6 @@ class App
         })->add(new ApiKeyMiddleware($config['api_key']));
 
         // --- Image Proxy Route (Unauthenticated) ---
-        // Route: /cosmos/cdn/{path:.*}
         $app->get('/cdn/{path:.*}', [ImageProxy::class, 'proxy']);
 
         return $app;
