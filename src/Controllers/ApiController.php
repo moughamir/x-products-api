@@ -223,7 +223,8 @@ class ApiController
 
     public function swaggerJson(Request $request, Response $response, array $args): Response
     {
-        // $this->sourceDir is 'src/Controllers'. dirname is 'src/'.
+        // Scan both the Controllers directory and the parent 'src/' directory to find
+        // endpoint annotations and the global annotations/schemas (in OpenApi.php).
         $scanPaths = [
             $this->sourceDir,
             dirname($this->sourceDir)
