@@ -6,14 +6,14 @@ use Slim\Factory\AppFactory;
 use App\Controllers\ApiController;
 use App\Middleware\ApiKeyMiddleware;
 
-// REMOVED: use App\Services\ImageProxy; // No longer needed
+use App\Services\ImageProxy; // <-- ADDED: Import for ImageProxy DI setup
 use App\Services\ProductService;
 use App\Services\ImageService;
-use Slim\Views\Twig; // ADDED: Need to use Twig for Swagger UI
+use Slim\Views\Twig;
 use PDO;
 use Slim\Routing\RouteCollectorProxy;
 use DI\ContainerBuilder;
-use Twig\Loader\FilesystemLoader; // ADDED: For setting up Twig
+use Twig\Loader\FilesystemLoader;
 
 class App
 {
@@ -26,7 +26,7 @@ class App
         // Create DI Container
         $containerBuilder = new ContainerBuilder();
         $containerBuilder->addDefinitions([
-            'source_dir' => __DIR__ . '/Controllers',
+            'source_dir' => __DIR__ . '/Controllers', // ADDED: For OpenAPI Generator to scan
 
             PDO::class => function() use ($dbConfig) {
                 // Path fix: Use the DB file path from the dedicated config file
@@ -38,38 +38,37 @@ class App
                     mkdir($dbDir, 0755, true);
                 }
 
-                $pdo = new PDO("sqlite:" . $dbFile);
-                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                return $pdo;
+                // Use the db file path from the dedicated config file
+                return new PDO("sqlite:" . $dbFile);
             },
-            ProductService::class => function($container) {
-                return new ProductService($container->get(PDO::class));
+
+            // Twig View setup
+            Twig::class => function(FilesystemLoader $loader) {
+                $loader->addPath(__DIR__ . '/../templates', 'default');
+                return Twig::create(__DIR__ . '/../templates', [
+                    'cache' => false,
+                    'debug' => true,
+                ]);
             },
-            ImageService::class => function($container) {
-                return new ImageService($container->get(PDO::class));
-            },
-            Twig::class => function() { // ADDED: Twig setup for Swagger UI
-                $loader = new FilesystemLoader(__DIR__ . '/../templates');
-                return new Twig($loader);
-            },
-            ApiController::class => function($container) {
-                // ADDED: Twig dependency to the controller's constructor
-                return new ApiController(
-                    $container->get(ProductService::class),
-                    $container->get(ImageService::class),
-                    $container->get(Twig::class)
-                );
-            },
-            // REMOVED: ImageProxy::class definition (No more image proxy service)
+
+            FilesystemLoader::class => \DI\create(FilesystemLoader::class),
+
+            // The ImageProxy class needs an explicit configuration array passed to its constructor
+            ImageProxy::class => \DI\autowire(ImageProxy::class)
+                ->constructorParameter('config', array_merge($config, $dbConfig)),
+
+            // Services using autowire (ProductService and ImageService require PDO, which is defined)
+            ProductService::class => \DI\autowire(ProductService::class),
+            ImageService::class => \DI\autowire(ImageService::class),
+
+            // 🐛 FIX: Explicitly inject the 'source_dir' string parameter for ApiController
+            ApiController::class => \DI\autowire(ApiController::class)
+                ->constructorParameter('sourceDir', \DI\get('source_dir')), // <-- ARGUMENT COUNT ERROR FIX
         ]);
 
         $container = $containerBuilder->build();
-
-        // Pass 'source_dir' to the container for access in ApiController::swaggerJson
-        $container->set('source_dir', __DIR__ . '/Controllers');
-
-        // Create app with the container
         AppFactory::setContainer($container);
+
         $app = AppFactory::create();
         $app->setBasePath('/cosmos'); // Set base path as per structure
 
@@ -98,7 +97,8 @@ class App
         $app->get('/swagger-ui', [ApiController::class, 'swaggerUi']);
         $app->get('/openapi.json', [ApiController::class, 'swaggerJson']);
 
-        // REMOVED: $app->get('/image-proxy', [ImageProxy::class, 'output']); // Removed image-proxy route
+        // Image Proxy Route
+        $app->get('/cdn/{path:.*}', [ImageProxy::class, 'proxy']); // Correct use of ImageProxy
 
         return $app;
     }
