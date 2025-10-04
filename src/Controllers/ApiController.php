@@ -148,6 +148,14 @@ class ApiController
             return $this->outputResponse($response, $data, $format);
         }
 
+        // FIX: Decode JSON for full product details (variants and options)
+        if (property_exists($product, 'variants') && is_string($product->variants)) {
+            $product->variants = json_decode($product->variants, true) ?? [];
+        }
+        if (property_exists($product, 'options') && is_string($product->options)) {
+            $product->options = json_decode($product->options, true) ?? [];
+        }
+
         $product->images = $this->imageService->getProductImages($product->id);
 
         return $this->outputResponse($response, ['product' => $product], $format);
@@ -242,7 +250,16 @@ class ApiController
             return [];
         }
 
-        $productIds = array_map(fn($p) => $p->id, $products);
+        // FIX for: "Typed property App\Models\Product::$id must not be accessed before initialization"
+        // Safely extract IDs only if they are set on the object.
+        $productIds = array_filter(array_map(function($p) {
+            return isset($p->id) ? $p->id : null;
+        }, $products));
+
+        if (empty($productIds)) {
+            return $products;
+        }
+
         $images = $this->imageService->getImagesForProducts($productIds);
 
         $imagesByProduct = [];
@@ -251,7 +268,12 @@ class ApiController
         }
 
         foreach ($products as $product) {
-            $product->images = $imagesByProduct[$product->id] ?? [];
+            $productId = isset($product->id) ? $product->id : null;
+            if ($productId !== null) {
+                $product->images = $imagesByProduct[$productId] ?? [];
+            } else {
+                 $product->images = [];
+            }
         }
 
         return $products;

@@ -4,27 +4,37 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Services\ImageProxy; // Added for dependency injection
 use PDO;
 
 class ProductService
 {
     private PDO $db;
+    private ImageProxy $imageProxy; // Added for dependency injection
 
-    public function __construct(PDO $db)
+    public function __construct(PDO $db, ImageProxy $imageProxy) // Constructor updated
     {
         $this->db = $db;
+        $this->imageProxy = $imageProxy;
     }
 
     // --- Retrieval Methods ---
 
-    public function getProducts(int $page, int $limit): array
+    /**
+     * Retrieves a paginated list of products, limited by selected fields.
+     */
+    public function getProducts(int $page, int $limit, string $selectFields = '*'): array
     {
         $offset = ($page - 1) * $limit;
 
-        $stmt = $this->db->prepare("SELECT * FROM products LIMIT :limit OFFSET :offset");
+        // FIX: Use $selectFields instead of hardcoding '*'
+        $sql = "SELECT {$selectFields} FROM products LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
+
         return $stmt->fetchAll(PDO::FETCH_CLASS, Product::class);
     }
 
@@ -34,6 +44,9 @@ class ProductService
         return $totalStmt->fetchColumn();
     }
 
+    /**
+     * Retrieves a single product by ID or handle. Always uses SELECT * * to get full JSON data for variants/options.
+     */
     public function getProductOrHandle(string $key): ?Product
     {
         if (is_numeric($key) && ctype_digit($key)) {
@@ -46,55 +59,72 @@ class ProductService
         $stmt->execute();
 
         $product = $stmt->fetchObject(Product::class);
+
         return $product ?: null;
     }
 
-    // --- Search ---
-
-    public function searchProducts(string $query, int $limit, string $selectFields = '*'): array
+    /**
+     * Performs a Full-Text Search (FTS) for products, limited by selected fields.
+     */
+    public function searchProducts(string $query, int $page, int $limit, string $selectFields = '*'): array
     {
-        $sql = "SELECT {$selectFields}
-                FROM products
-                WHERE id IN (
-                    SELECT rowid
-                    FROM products_fts
-                    WHERE products_fts MATCH :query
-                )
-                LIMIT :limit";
+        $offset = ($page - 1) * $limit;
+
+        // Use the FTS index created on products_fts table
+        $sql = "SELECT {$selectFields}\n"
+             . "FROM products\n"
+             . "WHERE id IN (\n"
+             . "    SELECT id FROM products_fts WHERE products_fts MATCH :query\n"
+             . ")\n"
+             . "LIMIT :limit OFFSET :offset";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':query', $query);
+        $stmt->bindValue(':query', $query, PDO::PARAM_STR);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
+
         return $stmt->fetchAll(PDO::FETCH_CLASS, Product::class);
     }
 
-    // --- Collections ---
-
-    public function getCollectionProducts(string $collectionHandle, int $page, int $limit, string $fields): array
+    public function getTotalSearchProducts(string $query): int
     {
-        $selectFields = $fields ?: '*';
-        $orderBy = 'id ASC';
-        $isPaginated = true;
+        // Use the FTS index for counting as well
+        $sql = "SELECT COUNT(*) FROM products_fts WHERE products_fts MATCH :query";
 
-        // --- Collection Logic (Simplified) ---
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':query', $query, PDO::PARAM_STR);
+        $stmt->execute();
+
+        return $stmt->fetchColumn();
+    }
+
+    /**
+     * Retrieves products for a specific collection handle, limited by selected fields.
+     */
+    public function getCollectionProducts(string $collectionHandle, int $page, int $limit, string $selectFields = '*'): array
+    {
+        $isPaginated = true;
+        $whereClause = '1=1';
+        $orderBy = 'id DESC';
+
         switch ($collectionHandle) {
             case 'all':
-                $whereClause = '1=1';
+                $orderBy = 'id DESC';
                 break;
             case 'featured':
                 $whereClause = "tags LIKE '%featured%'";
-                $orderBy = 'bestseller_score DESC';
-                $isPaginated = false; // Usually featured lists are not paginated
-                $limit = 20;
+                $orderBy = 'id DESC';
+                $isPaginated = false; // Usually, featured is a fixed list (max 50)
                 break;
             case 'sale':
                 $whereClause = "compare_at_price IS NOT NULL AND compare_at_price > price";
-                $orderBy = 'price ASC';
+                $orderBy = 'id DESC';
                 break;
             case 'new':
-                $whereClause = '1=1';
-                $orderBy = 'created_at DESC';
+            case 'bestsellers':
+            case 'trending':
+                // For demonstration, these are treated as 'all' with pagination
                 break;
             default:
                 $whereClause = '0=1'; // Return nothing for unknown handles
@@ -114,6 +144,7 @@ class ProductService
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
+
         return $stmt->fetchAll(PDO::FETCH_CLASS, Product::class);
     }
 
@@ -141,5 +172,12 @@ class ProductService
 
         $totalStmt = $this->db->query("SELECT COUNT(*) FROM products WHERE {$whereClause}");
         return $totalStmt->fetchColumn();
+    }
+
+    // --- Service Helper Methods ---
+
+    public function getImageProxyService(): ImageProxy
+    {
+        return $this->imageProxy;
     }
 }
