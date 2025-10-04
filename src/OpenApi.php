@@ -24,6 +24,7 @@ use OpenApi\Annotations as OA;
  * in="header",
  * name="X-API-KEY"
  * )
+ * * * --- OpenAPI Schemas for Data Models ---
  * @OA\Schema(
  * schema="Image",
  * type="object",
@@ -65,3 +66,8 @@ use OpenApi\Annotations as OA;
  * )
  * )
  */
+class OpenApi
+{
+    // This class is intentionally left empty.
+    // It serves as a container for OpenAPI annotations.
+}

@@ -223,7 +223,13 @@ class ApiController
 
     public function swaggerJson(Request $request, Response $response, array $args): Response
     {
-        $openapi = Generator::scan([$this->sourceDir]);
+        // $this->sourceDir is 'src/Controllers'. dirname is 'src/'.
+        $scanPaths = [
+            $this->sourceDir,
+            dirname($this->sourceDir)
+        ];
+
+        $openapi = Generator::scan($scanPaths);
 
         $response->getBody()->write($openapi->toJson());
         return $response->withHeader('Content-Type', 'application/json');
