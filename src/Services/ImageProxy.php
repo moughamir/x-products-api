@@ -7,22 +7,22 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\StreamFactoryInterface;
-use Psr\Http\Message\ResponseFactoryInterface;
+// Psr\Http\Message\StreamFactoryInterface; // Not needed as Guzzle handles streaming
+// Psr\Http\Message\ResponseFactoryInterface; // Not strictly needed as we use the passed Response object
 
 
 class ImageProxy {
     private string $baseUrl;
     private Client $httpClient;
     private array $allowedDomains;
-    private ResponseFactoryInterface $responseFactory;
-    private StreamFactoryInterface $streamFactory;
+    // Removed unused properties: private ResponseFactoryInterface $responseFactory; private StreamFactoryInterface $streamFactory;
 
     public function __construct(array $config) {
         // Guzzle is preferred here as it correctly streams and handles headers/errors
-        $this->baseUrl = rtrim($config['image_proxy']['base_url'], '/');
+        $this->baseUrl = rtrim($config['image_proxy']['base_url'] ?? 'https://cdn.shopify.com', '/');
         // Use allowed domains from config for security, even without caching
         $this->allowedDomains = $config['allowed_domains'] ?? ['cdn.shopify.com'];
+        // Disable SSL verification for development environments, remove in production if possible
         $this->httpClient = new Client(['verify' => false]);
     }
 
@@ -40,7 +40,7 @@ class ImageProxy {
 
         // Validate URL domain
         $parsedUrl = parse_url($externalUrl);
-        if (!isset($parsedUrl['host']) || !in_array($parsedUrl['host'], $this->allowedDomains)) {
+        if ($parsedUrl === false || !in_array($parsedUrl['host'] ?? '', $this->allowedDomains)) {
             $response = $response->withStatus(400);
             $response->getBody()->write("Invalid image domain.");
             return $response;

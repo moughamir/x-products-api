@@ -1,7 +1,7 @@
 <?php
 // src/OpenApi.php
 
-namespace App;
+namespace App; // <-- ADDED: The namespace for the file
 
 use OpenApi\Annotations as OA;
 
@@ -68,6 +68,5 @@ use OpenApi\Annotations as OA;
  */
 class OpenApi
 {
-    // This class is intentionally left empty.
-    // It serves as a container for OpenAPI annotations.
+    // This class is a container for the OpenAPI annotations.
 }

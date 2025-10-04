@@ -38,20 +38,16 @@ echo "========================================\n";
 try {
     // Pass the DIRECTORY path to the processor
     $processor = new ProductProcessor($jsonDirPath, $config);
-    echo "✅ [TACKLE] ProductProcessor initialized.\n"; // ADDED LOGGING
-
     $result = $processor->process();
 
     echo "\n=== Processing Final Summary ===\n";
     echo "Total products remaining after filtering: " . $result['total_products'] . "\n";
     echo "Domains found: " . implode(', ', $result['domains']) . "\n";
     echo "Product types found: " . count($result['product_types']) . "\n";
-    echo "Total execution time: " . (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) . " seconds\n";
-    echo "========================================\n";
 
 } catch (\Exception $e) {
     echo "\nFATAL ERROR: " . $e->getMessage() . "\n";
-    echo "File: " . $e->getFile() . "\n";
-    echo "Line: " . $e->getLine() . "\n";
     exit(1);
 }
+
+exit(0);

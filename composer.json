@@ -19,8 +19,7 @@
     "salsify/json-streaming-parser": "^8.3",
     "slim/slim": "^4.15",
     "slim/twig-view": "^3.3",
-    "zircote/swagger-php": "^4.8",
-    "doctrine/annotations": "^2.0"
+    "zircote/swagger-php": "^4.8"
   },
   "autoload": {
     "psr-4": {
@@ -29,16 +28,16 @@
   },
   "scripts": {
     "post-update-cmd": [
-      "@app:clear-cache"
+      "@clear-cache"
     ],
     "post-install-cmd": [
-      "@app:clear-cache"
+      "@clear-cache"
     ],
     "post-autoload-dump": [
-      "@app:clear-cache"
+      "@clear-cache"
     ],
     "process:products": "php bin/tackle.php",
-    "docs:generate": "vendor/bin/openapi --output openapi.json src/OpenApi.php src/Controllers/",
-    "app:clear-cache": "php clear_opcache.php"
+    "docs:generate": "vendor/bin/openapi --output openapi.json src/",
+    "clear-cache": "php clear_opcache.php"
   }
 }

@@ -5,7 +5,7 @@ namespace App;
 use Slim\Factory\AppFactory;
 use App\Controllers\ApiController;
 use App\Middleware\ApiKeyMiddleware;
-use App\Services\ImageProxy;
+use App\Services\ImageProxy; // ADDED: ImageProxy service
 use App\Services\ProductService;
 use App\Services\ImageService;
 use Slim\Views\Twig;
@@ -18,58 +18,81 @@ class App
 {
     public static function bootstrap(): \Slim\App
     {
+        // Path fix: Adjusted require to reflect the nested config files
         $config = require __DIR__ . '/../config/app.php';
         $dbConfig = require __DIR__ . '/../config/database.php';
 
+        // Merge configuration for full access in DI definitions
+        $fullConfig = array_merge($config, $dbConfig);
+
+        // Create DI Container
         $containerBuilder = new ContainerBuilder();
         $containerBuilder->addDefinitions([
+            // ADDED: For OpenAPI Generator to scan both ApiController and OpenApi.php
             'source_dir' => __DIR__ . '/Controllers',
 
             PDO::class => function() use ($dbConfig) {
+                // Path fix: Use the DB file path from the dedicated config file
                 $dbFile = $dbConfig['db_file'];
 
+                // Ensure the database directory exists
                 $dbDir = dirname($dbFile);
                 if (!is_dir($dbDir)) {
                     mkdir($dbDir, 0755, true);
                 }
 
-                return new PDO("sqlite:" . $dbFile);
+                $pdo = new PDO("sqlite:" . $dbFile);
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                return $pdo;
             },
 
-            Twig::class => function(FilesystemLoader $loader) {
-                $loader->addPath(__DIR__ . '/../templates', 'default');
-                return Twig::create(__DIR__ . '/../templates', [
-                    'cache' => false,
-                    'debug' => true,
-                ]);
+            // ADDED: ImageProxy dependency
+            ImageProxy::class => function() use ($fullConfig) {
+                return new ImageProxy($fullConfig);
             },
 
-            FilesystemLoader::class => \DI\create(FilesystemLoader::class),
+            // UPDATED: ProductService now requires ImageProxy
+            ProductService::class => function(PDO $db, ImageProxy $imageProxy) {
+                return new ProductService($db, $imageProxy);
+            },
 
-            ImageProxy::class => \DI\autowire(ImageProxy::class)
-                ->constructorParameter('config', array_merge($config, $dbConfig)),
+            ImageService::class => function(PDO $db) {
+                return new ImageService($db);
+            },
 
-            ProductService::class => \DI\autowire(ProductService::class),
-            ImageService::class => \DI\autowire(ImageService::class),
+            Twig::class => function() {
+                $loader = new FilesystemLoader(__DIR__ . '/../templates');
+                // Disable cache for dev
+                return new Twig($loader, ['cache' => false]);
+            },
 
-            ApiController::class => \DI\autowire(ApiController::class)
-                ->constructorParameter('sourceDir', \DI\get('source_dir')),
+            // Final ApiController Definition
+            ApiController::class => function(ProductService $productService, ImageService $imageService, Twig $view) {
+                // Pass 'source_dir' directly to the controller for OpenAPI scanning
+                return new ApiController($productService, $imageService, $view, __DIR__ . '/Controllers');
+            }
         ]);
 
         $container = $containerBuilder->build();
         AppFactory::setContainer($container);
 
         $app = AppFactory::create();
-        $app->setBasePath('/cosmos');
+        $app->setBasePath('/cosmos'); // Set base path as per structure
 
+        // Middleware
         $app->addRoutingMiddleware();
         $app->addErrorMiddleware(true, true, true);
 
+        // API Routes (Grouped for Middleware)
         $apiKeyMiddleware = new ApiKeyMiddleware($config['api_key']);
         $app->get('/', function ($request, $response, $args) {
+            // This is the route that handles the base URL: /cosmos/
             $response->getBody()->write("Welcome to the X-Products API!");
             return $response;
         });
+
+        // Image Proxy Route (No API Key Required)
+        $app->get('/cdn/{path:.*}', [ApiController::class, 'imageProxy']); // ADDED: Image Proxy Route
 
         $app->group('/products', function (RouteCollectorProxy $group) {
             $group->get('[/]', [ApiController::class, 'getProducts']);
@@ -81,10 +104,9 @@ class App
             $group->get('/{handle}', [ApiController::class, 'getCollectionProducts']);
         })->add($apiKeyMiddleware);
 
+        // Documentation Routes (No API Key Required)
         $app->get('/swagger-ui', [ApiController::class, 'swaggerUi']);
         $app->get('/openapi.json', [ApiController::class, 'swaggerJson']);
-
-        $app->get('/cdn/{path:.*}', [ImageProxy::class, 'proxy']);
 
         return $app;
     }
