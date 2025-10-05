@@ -15,20 +15,24 @@ class Product
     public int $id;
     public string $title;  // Changed from name to title
     public string $handle;
-    public ?string $body_html;
+    public ?string $body_html = null;
     public float $price;
-    public ?float $compare_at_price;
-    public ?string $product_type;  // Changed from category to product_type
+    public ?float $compare_at_price = null;
+    public ?string $product_type = null;  // Changed from category to product_type
     public bool $in_stock;
-    public ?float $rating;
-    public ?int $review_count;
-    public ?string $tags;
-    public ?string $vendor;
-    public ?float $bestseller_score;
-    public ?string $created_at;
-    public ?string $updated_at;
-    public ?string $raw_json;
-    public ?int $quantity;
+    public ?float $rating = null;
+    public ?int $review_count = null;
+    public ?string $tags = null;
+    public ?string $vendor = null;
+    public ?float $bestseller_score = null;
+    public ?string $created_at = null;
+    public ?string $updated_at = null;
+    public ?string $raw_json = null;
+    public ?int $quantity = null;
+    public ?string $source_domain = null;
+    public ?string $category = null;
+    public ?string $variants_json = null;
+    public ?string $options_json = null;
 
     // Arrays for related data, populated by the API controller
     public array $images = [];

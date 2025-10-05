@@ -75,7 +75,7 @@ class ProductProcessor
         // 2. Create product_images table
         $sqlImages = "
             CREATE TABLE product_images (
-                id INTEGER PRIMARY KEY,
+                id INTEGER,
                 product_id INTEGER,
                 position INTEGER,
                 src TEXT,
@@ -83,6 +83,7 @@ class ProductProcessor
                 height INTEGER,
                 created_at TEXT,
                 updated_at TEXT,
+                PRIMARY KEY (id, product_id),
                 FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
             );
         ";
@@ -130,6 +131,33 @@ class ProductProcessor
                 :source_domain, :price, :compare_at_price, :in_stock, :variants_json, :options_json
             )
         ";
+    }
+
+    private function normalizeTags($tags): ?string
+    {
+        if ($tags === null) {
+            return null;
+        }
+
+        if (is_array($tags)) {
+            $flatTags = $this->flattenTags($tags);
+            return empty($flatTags) ? null : implode(', ', $flatTags);
+        }
+
+        return is_string($tags) ? $tags : null;
+    }
+
+    private function flattenTags(array $tags): array
+    {
+        $flattened = [];
+
+        array_walk_recursive($tags, function ($value) use (&$flattened) {
+            if (is_string($value) && trim($value) !== '') {
+                $flattened[] = trim($value);
+            }
+        });
+
+        return $flattened;
     }
 
     private function getInsertImageSql(): string
@@ -183,6 +211,8 @@ class ProductProcessor
                 $inStock = $this->getInStockStatus($product['variants'] ?? []);
 
                 // --- Insert Product ---
+                $formattedTags = $this->normalizeTags($product['tags'] ?? null);
+
                 $stmtProduct->bindValue(':id', $product['id'], PDO::PARAM_INT);
                 $stmtProduct->bindValue(':title', $product['title'], PDO::PARAM_STR);
                 $stmtProduct->bindValue(':handle', $product['handle'], PDO::PARAM_STR);
@@ -191,13 +221,17 @@ class ProductProcessor
                 $stmtProduct->bindValue(':product_type', $product['product_type'], PDO::PARAM_STR);
                 $stmtProduct->bindValue(':created_at', $product['created_at'], PDO::PARAM_STR);
                 $stmtProduct->bindValue(':updated_at', $product['updated_at'], PDO::PARAM_STR);
-                $stmtProduct->bindValue(':tags', $product['tags'], PDO::PARAM_STR);
+                if ($formattedTags === null) {
+                    $stmtProduct->bindValue(':tags', null, PDO::PARAM_NULL);
+                } else {
+                    $stmtProduct->bindValue(':tags', $formattedTags, PDO::PARAM_STR);
+                }
                 $stmtProduct->bindValue(':source_domain', $domainData['domain'], PDO::PARAM_STR);
                 $stmtProduct->bindValue(':price', $this->getMinPrice($product['variants'] ?? []), PDO::PARAM_STR);
                 $stmtProduct->bindValue(':compare_at_price', $this->getMinCompareAtPrice($product['variants'] ?? []), PDO::PARAM_STR);
                 $stmtProduct->bindValue(':in_stock', $inStock, PDO::PARAM_INT);
-                $stmtProduct->bindValue(':variants_json', json_encode($product['variants'] ?? []), PDO::PARAM_STR);
-                $stmtProduct->bindValue(':options_json', json_encode($product['options'] ?? []), PDO::PARAM_STR);
+                $stmtProduct->bindValue(':variants_json', json_encode($product['variants'] ?? [], JSON_UNESCAPED_UNICODE), PDO::PARAM_STR);
+                $stmtProduct->bindValue(':options_json', json_encode($product['options'] ?? [], JSON_UNESCAPED_UNICODE), PDO::PARAM_STR);
                 $stmtProduct->execute();
 
                 $productCount++;

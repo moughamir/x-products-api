@@ -76,7 +76,8 @@ class App
         AppFactory::setContainer($container);
 
         $app = AppFactory::create();
-        $app->setBasePath('/cosmos'); // Set base path as per structure
+
+        $app->setBasePath('/cosmos');
 
         // Middleware
         $app->addRoutingMiddleware();

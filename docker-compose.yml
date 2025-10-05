@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      APP_ENV: production
+      SQLITE_PATH: /var/www/sqlite/products.sqlite
+    volumes:
+      - sqlite_data:/var/www/sqlite
+      - ./:/var/www/html
+    depends_on:
+      - sqlite
+
+  sqlite:
+    image: alpine:3.20
+    command: ["/bin/sh", "-c", "mkdir -p /var/www/sqlite && tail -f /dev/null"]
+    volumes:
+      - sqlite_data:/var/www/sqlite
+
+volumes:
+  sqlite_data:
+    driver: local

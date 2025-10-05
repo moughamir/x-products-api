@@ -145,7 +145,7 @@ class ApiController
 
         // Attach images, variants, and options
         $products = $this->attachImagesToProducts([$product]);
-        $data = $products[0];
+        $data = $products[0]->toArray();
 
         return $this->outputResponse($response, $data, $format);
     }
@@ -282,12 +282,16 @@ class ApiController
 
     public function swaggerJson(Request $request, Response $response, array $args): Response
     {
+        // Ensure BASE_PATH exists before config bootstrap
+        if (!defined('BASE_PATH')) {
+            define('BASE_PATH', dirname(__DIR__, 2)); // Points to project root
+        }
+
         $openapi = Generator::scan([$this->sourceDir, __DIR__ . '/../OpenApi.php']);
 
         $response->getBody()->write($openapi->toJson());
         return $response->withHeader('Content-Type', 'application/json');
     }
-
     private function attachImagesToProducts(array $products): array
     {
         if (empty($products)) {

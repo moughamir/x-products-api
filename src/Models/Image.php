@@ -9,11 +9,11 @@ class Image
     public int $product_id;
     public int $position;
     public string $src;
-    public ?int $width;
-    public ?int $height;
-    public ?string $alt;
-    public ?string $created_at;
-    public ?string $updated_at;
+    public ?int $width = null;
+    public ?int $height = null;
+    public ?string $alt = null;
+    public ?string $created_at = null;
+    public ?string $updated_at = null;
     public ?array $variant_ids = [];
 
     /**

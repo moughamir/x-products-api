@@ -1,6 +1,9 @@
 <?php
 // config/database.php
 
+$defaultPath = __DIR__ . '/../data/sqlite/products.sqlite';
+$dbFile = getenv('SQLITE_PATH') ?: $defaultPath;
+
 return [
-    'db_file' => __DIR__ . '/../data/sqlite/products.sqlite',
+    'db_file' => $dbFile,
 ];
