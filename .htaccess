@@ -1,6 +1,5 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /cosmos/
 
     # CRITICAL: Exclude openapi.json from being routed to index.php
     # This ensures the static file is served directly by the web server (LiteSpeed).
