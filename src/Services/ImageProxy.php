@@ -18,12 +18,30 @@ class ImageProxy {
     // Removed unused properties: private ResponseFactoryInterface $responseFactory; private StreamFactoryInterface $streamFactory;
 
     public function __construct(array $config) {
-        // Guzzle is preferred here as it correctly streams and handles headers/errors
+        // Get base URL from config with fallback
         $this->baseUrl = rtrim($config['image_proxy']['base_url'] ?? 'https://cdn.shopify.com', '/');
-        // Use allowed domains from config for security, even without caching
+
+        // Use allowed domains from config for security
         $this->allowedDomains = $config['allowed_domains'] ?? ['cdn.shopify.com'];
-        // Disable SSL verification for development environments, remove in production if possible
-        $this->httpClient = new Client(['verify' => false]);
+
+        // Create Guzzle client with proper configuration
+        $this->httpClient = new Client([
+            // Enable SSL verification for security (important for production)
+            'verify' => true,
+            // Set reasonable timeout values
+            'connect_timeout' => 3,
+            'timeout' => 10,
+            // Follow redirects but limit to prevent redirect loops
+            'allow_redirects' => [
+                'max' => 5,
+                'strict' => true,
+                'referer' => true,
+            ],
+            // Set user agent
+            'headers' => [
+                'User-Agent' => 'CosmosAPI/1.0 ImageProxy'
+            ]
+        ]);
     }
 
     /**
@@ -58,8 +76,15 @@ class ImageProxy {
                                  ->withHeader('Content-Type', $httpResponse->getHeaderLine('Content-Type'))
                                  ->withHeader('Cache-Control', 'max-age=2592000, public'); // 30-day client cache
 
-            // Stream the body directly to the PSR-7 response
-            $response->getBody()->write($httpResponse->getBody()->getContents());
+            // Stream the body in chunks to avoid loading the entire image into memory
+            $body = $httpResponse->getBody();
+            $responseBody = $response->getBody();
+
+            // Read in 4KB chunks and write to the response
+            while (!$body->eof()) {
+                $responseBody->write($body->read(4096));
+            }
+
             return $response;
 
         } catch (RequestException $e) {

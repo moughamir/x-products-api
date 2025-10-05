@@ -28,16 +28,16 @@
   },
   "scripts": {
     "post-update-cmd": [
-      "@clear-cache"
+      "@app:clear-cache"
     ],
     "post-install-cmd": [
-      "@clear-cache"
+      "@app:clear-cache"
     ],
     "post-autoload-dump": [
-      "@clear-cache"
+      "@app:clear-cache"
     ],
     "process:products": "php bin/tackle.php",
     "docs:generate": "vendor/bin/openapi --output openapi.json src/OpenApi.php src/Controllers/",
-    "clear-cache": "php clear_opcache.php"
+    "app:clear-cache": "php clear_opcache.php"
   }
 }

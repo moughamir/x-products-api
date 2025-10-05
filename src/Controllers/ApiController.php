@@ -31,11 +31,51 @@ class ApiController
 
     private function outputResponse(Response $response, array $data, string $format): Response
     {
-        if ($format === 'msgpack') {
-            return new MsgPackResponse($response, $data);
+        // Validate format against allowed formats from config
+        $config = require __DIR__ . '/../../config/app.php';
+        $allowedFormats = $config['response_formats']['available'] ?? ['json', 'msgpack'];
+        $defaultFormat = $config['response_formats']['default'] ?? 'json';
+
+        // If format is not supported, fall back to default
+        if (!in_array($format, $allowedFormats)) {
+            $format = $defaultFormat;
         }
 
-        $response->getBody()->write(json_encode($data));
+        // Convert any Product objects to arrays with proper string IDs
+        if (isset($data['products']) && is_array($data['products'])) {
+            $data['products'] = array_map(function($product) {
+                return $product instanceof \App\Models\Product ? $product->toArray() : $product;
+            }, $data['products']);
+        } elseif (isset($data['id']) && !isset($data['products'])) {
+            // Single product response
+            if ($data instanceof \App\Models\Product) {
+                $data = $data->toArray();
+            }
+        }
+
+        if ($format === 'msgpack') {
+            try {
+                // Use the static method from MsgPackResponse
+                return MsgPackResponse::withMsgPack($response, $data);
+            } catch (\Exception $e) {
+                // Log the error (in a production environment)
+                error_log('MsgPack error: ' . $e->getMessage());
+
+                // Fallback to JSON with an error message
+                $errorData = [
+                    'error' => 'MessagePack format not available: ' . $e->getMessage(),
+                    'data' => $data
+                ];
+                $response->getBody()->write(json_encode($errorData));
+                return $response
+                    ->withHeader('Content-Type', 'application/json')
+                    ->withStatus(500);
+            }
+        }
+
+        // Default JSON response
+        $jsonOptions = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
+        $response->getBody()->write(json_encode($data, $jsonOptions));
         return $response->withHeader('Content-Type', 'application/json');
     }
 
@@ -225,8 +265,18 @@ class ApiController
 
     public function swaggerUi(Request $request, Response $response, array $args): Response
     {
+        // Get the base URL for the API
+        $uri = $request->getUri();
+        $baseUrl = $uri->getScheme() . '://' . $uri->getHost();
+        if ($uri->getPort()) {
+            $baseUrl .= ':' . $uri->getPort();
+        }
+        $baseUrl .= '/cosmos';
+
         return $this->view->render($response, 'swagger.html', [
-            'pageTitle' => 'Cosmos API Documentation'
+            'pageTitle' => 'Cosmos API Documentation',
+            'openapi_spec_url' => $baseUrl . '/openapi.json',
+            'api_key' => '' // Leave empty for security, user will input their key
         ]);
     }
 

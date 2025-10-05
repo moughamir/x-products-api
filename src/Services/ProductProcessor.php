@@ -6,9 +6,9 @@ use PDO;
 use Salsify\JsonStreamingParser\JsonStreamingParser;
 use PDOStatement; // Added use statement for native PDOStatement
 
-// Set high limits for the CLI script
-ini_set('memory_limit', '-1'); // Set to -1 for unlimited memory
-ini_set('max_execution_time', 0); // Unlimited execution time
+// Set reasonable limits for the CLI script
+ini_set('memory_limit', '512M'); // Set a reasonable memory limit (adjust based on data size)
+ini_set('max_execution_time', 300); // 5 minutes should be enough for most operations
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -278,11 +278,6 @@ class ProductProcessor
     // Simple mock for domain extraction based on file name pattern
     private function extractDomainData(array $product): array
     {
-        // Example: if ID 800171071 is part of the path, assume the domain moritotabi.com
-        $productID = $product['id'] ?? null;
-        if (strpos((string)$productID, '800171071') !== false) {
-             return ['domain' => 'moritotabi.com'];
-        }
         return ['domain' => 'default-store.com'];
     }
 

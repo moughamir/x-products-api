@@ -42,11 +42,11 @@
                     {
                         "name": "fields",
                         "in": "query",
+                        "description": "Comma-separated list of fields to return (e.g., id,title,price). Default is all fields.",
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "default": "*",
-                            "example": "id,title,price"
+                            "default": "*"
                         }
                     },
                     {
@@ -65,7 +65,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of products.",
+                        "description": "A paginated list of products.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -73,16 +73,69 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "Error response."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/products/{key}": {
+            "get": {
+                "summary": "Retrieves a single product by ID or handle.",
+                "operationId": "ef5c34221cb61f3e4af920b46ae69ffe",
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "description": "Product ID (int) or Handle (string)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "example-product"
+                        }
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "json",
+                            "enum": [
+                                "json",
+                                "msgpack"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The full product object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Product"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Product not found."
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
             }
         },
         "/products/search": {
             "get": {
-                "summary": "Performs a Full-Text Search (FTS) for products.",
+                "summary": "Performs a full-text search across product titles and descriptions.",
                 "operationId": "f214d46b436d38881fa4da308d73bf87",
                 "parameters": [
                     {
@@ -91,7 +144,8 @@
                         "description": "Search query string.",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "example": "blue shirt"
                         }
                     },
                     {
@@ -116,11 +170,11 @@
                     {
                         "name": "fields",
                         "in": "query",
+                        "description": "Comma-separated list of fields to return.",
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "default": "*",
-                            "example": "id,title,price"
+                            "default": "*"
                         }
                     },
                     {
@@ -139,7 +193,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of products matching the search query.",
+                        "description": "A paginated list of products matching the query.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -147,63 +201,6 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": "Error response."
-                    }
-                },
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ]
-            }
-        },
-        "/products/{key}": {
-            "get": {
-                "summary": "Retrieves a single product by ID or handle (full data).",
-                "operationId": "ef5c34221cb61f3e4af920b46ae69ffe",
-                "parameters": [
-                    {
-                        "name": "key",
-                        "in": "path",
-                        "description": "Product ID or Handle.",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "example": "1234567890"
-                        }
-                    },
-                    {
-                        "name": "format",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "default": "json",
-                            "enum": [
-                                "json",
-                                "msgpack"
-                            ]
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "The requested product.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Product"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Product not found."
-                    },
-                    "default": {
-                        "description": "Error response."
                     }
                 },
                 "security": [
@@ -215,13 +212,13 @@
         },
         "/collections/{handle}": {
             "get": {
-                "summary": "Retrieves products from a specific collection handle.",
+                "summary": "Retrieves a list of products by collection handle.",
                 "operationId": "3b69a6d1270f491d0a73d4fccb42db60",
                 "parameters": [
                     {
                         "name": "handle",
                         "in": "path",
-                        "description": "Collection handle (e.g., all, featured, sale).",
+                        "description": "Collection handle (e.g., all, featured, sale)",
                         "required": true,
                         "schema": {
                             "type": "string",
@@ -250,11 +247,11 @@
                     {
                         "name": "fields",
                         "in": "query",
+                        "description": "Comma-separated list of fields to return.",
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "default": "*",
-                            "example": "id,title,price"
+                            "default": "*"
                         }
                     },
                     {
@@ -273,7 +270,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of collection products.",
+                        "description": "A list of products belonging to the collection.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -285,32 +282,32 @@
                     "404": {
                         "description": "Collection handle is not supported."
                     }
-                },
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ]
+                }
             }
         },
-        "/cdn/{path}": {
+        "/cdn/{path:.*}": {
             "get": {
-                "summary": "Image reverse proxy to fetch and serve images from an external CDN.",
-                "operationId": "24af4d477e38177a28c26899339fabc1",
+                "summary": "Reverse proxy for external images (CDN).",
+                "description": "Streams an image from the configured external CDN (`https://cdn.shopify.com`) via this domain.",
+                "operationId": "7c30a51afc444fa63320867fa4719525",
                 "parameters": [
                     {
                         "name": "path",
                         "in": "path",
-                        "description": "Image path on the external CDN.",
+                        "description": "The path to the image on the external CDN.",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "example": "s/files/1/0000/0000/products/image.jpg"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Image stream."
+                        "description": "The streamed image content."
+                    },
+                    "400": {
+                        "description": "Invalid image domain."
                     },
                     "404": {
                         "description": "Image not found."
@@ -325,12 +322,12 @@
                 "title": "Image",
                 "properties": {
                     "id": {
-                        "type": "integer",
-                        "example": 9876
+                        "type": "string",
+                        "example": "9876"
                     },
                     "product_id": {
-                        "type": "integer",
-                        "example": 12345
+                        "type": "string",
+                        "example": "12345"
                     },
                     "position": {
                         "type": "integer",
@@ -348,6 +345,27 @@
                     "height": {
                         "type": "integer",
                         "example": 1000
+                    },
+                    "alt": {
+                        "type": "string",
+                        "example": "Blue t-shirt",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "variant_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 },
                 "type": "object"
@@ -356,8 +374,8 @@
                 "title": "Product",
                 "properties": {
                     "id": {
-                        "type": "integer",
-                        "example": 12345
+                        "type": "string",
+                        "example": "12345"
                     },
                     "title": {
                         "type": "string",
@@ -394,22 +412,163 @@
                         "example": 25,
                         "nullable": true
                     },
+                    "in_stock": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "rating": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 4.5,
+                        "nullable": true
+                    },
+                    "review_count": {
+                        "type": "integer",
+                        "example": 42,
+                        "nullable": true
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "example": 10,
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
                     "variants": {
                         "type": "array",
                         "items": {
-                            "type": "object"
+                            "$ref": "#/components/schemas/ProductVariant"
                         }
                     },
                     "options": {
                         "type": "array",
                         "items": {
-                            "type": "object"
+                            "$ref": "#/components/schemas/ProductOption"
                         }
                     },
                     "images": {
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/Image"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ProductVariant": {
+                "title": "ProductVariant",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "98765"
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "example": "12345"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Small / Blue"
+                    },
+                    "option1": {
+                        "type": "string",
+                        "example": "Small",
+                        "nullable": true
+                    },
+                    "option2": {
+                        "type": "string",
+                        "example": "Blue",
+                        "nullable": true
+                    },
+                    "option3": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "sku": {
+                        "type": "string",
+                        "example": "PROD-SM-BLU",
+                        "nullable": true
+                    },
+                    "requires_shipping": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "taxable": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "featured_image": {
+                        "type": "string",
+                        "example": "http://example.com/variant-image.jpg",
+                        "nullable": true
+                    },
+                    "available": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 19.99
+                    },
+                    "grams": {
+                        "type": "integer",
+                        "example": 200
+                    },
+                    "compare_at_price": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 25,
+                        "nullable": true
+                    },
+                    "position": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "ProductOption": {
+                "title": "ProductOption",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "54321"
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "example": "12345"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Size"
+                    },
+                    "position": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
                         }
                     }
                 },

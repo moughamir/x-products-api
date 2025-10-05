@@ -5,7 +5,7 @@ namespace App;
 use Slim\Factory\AppFactory;
 use App\Controllers\ApiController;
 use App\Middleware\ApiKeyMiddleware;
-use App\Services\ImageProxy; // ADDED: ImageProxy service
+use App\Services\ImageProxy;
 use App\Services\ProductService;
 use App\Services\ImageService;
 use Slim\Views\Twig;
@@ -28,7 +28,6 @@ class App
         // Create DI Container
         $containerBuilder = new ContainerBuilder();
         $containerBuilder->addDefinitions([
-            // ADDED: For OpenAPI Generator to scan both ApiController and OpenApi.php
             'source_dir' => __DIR__ . '/Controllers',
 
             PDO::class => function() use ($dbConfig) {
