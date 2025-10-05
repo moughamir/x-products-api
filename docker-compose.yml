@@ -9,10 +9,11 @@ services:
       - "8080:80"
     environment:
       APP_ENV: production
-      SQLITE_PATH: /var/www/sqlite/products.sqlite
+      SQLITE_PATH: /var/www/html/cosmos/data/sqlite/database.sqlite
     volumes:
-      - sqlite_data:/var/www/sqlite
-      - ./:/var/www/html
+      # Mount the entire project to /var/www/html/cosmos (matching production)
+      - ./:/var/www/html/cosmos
+      - sqlite_data:/var/www/html/cosmos/data/sqlite
     depends_on:
       - sqlite
 
