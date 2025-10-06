@@ -28,16 +28,29 @@
   },
   "scripts": {
     "post-update-cmd": [
-      "@app:clear-cache"
+      "@build"
     ],
     "post-install-cmd": [
-      "@app:clear-cache"
+      "@build"
     ],
     "post-autoload-dump": [
       "@app:clear-cache"
     ],
-    "process:products": "php bin/tackle.php",
+    "build": [
+      "@app:clear-cache",
+      "@docs:generate",
+      "@db:setup"
+    ],
     "docs:generate": "php bin/generate-openapi.php --output openapi.json src/OpenApi.php src/Controllers/",
+    "db:setup": "php bin/tackle.php --skip-if-exists",
+    "db:rebuild": "php bin/tackle.php --force",
     "app:clear-cache": "php clear_opcache.php"
+  },
+  "scripts-descriptions": {
+    "build": "Run full build process (cache clear, docs generation, database setup)",
+    "docs:generate": "Generate OpenAPI documentation from PHP annotations",
+    "db:setup": "Setup database with products (skips if already populated)",
+    "db:rebuild": "Force rebuild database (WARNING: deletes all data)",
+    "app:clear-cache": "Clear PHP opcache"
   }
 }

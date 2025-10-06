@@ -15,10 +15,47 @@ This is a RESTful API for managing and retrieving product information. The API i
 
 ### Prerequisites
 
--   Docker
--   Docker Compose
+-   **Docker** (for containerized deployment)
+-   **Docker Compose**
+-   **OR** PHP 8.2+ with SQLite extension (for local development)
+-   **Composer** (for dependency management)
 
-### Installation
+### Quick Start (Automated)
+
+The easiest way to get started is to use the automated build process:
+
+1.  **Clone the repository:**
+
+    ```bash
+    git clone https://github.com/your-username/x-products-api.git
+    cd x-products-api
+    ```
+
+2.  **Install dependencies:**
+
+    ```bash
+    composer install
+    ```
+
+    This automatically:
+    - Installs vendor dependencies
+    - Clears PHP opcache
+    - Generates OpenAPI documentation
+    - Sets up the database (if empty)
+
+3.  **Start the development server:**
+
+    ```bash
+    php -S localhost:8080 -t public
+    ```
+
+4.  **Access the API:**
+
+    - API Base: `http://localhost:8080/cosmos`
+    - Swagger UI: `http://localhost:8080/cosmos/swagger-ui`
+    - OpenAPI Spec: `http://localhost:8080/cosmos/openapi.json`
+
+### Docker Installation
 
 1.  **Clone the repository:**
 
@@ -33,15 +70,102 @@ This is a RESTful API for managing and retrieving product information. The API i
     docker-compose up -d --build
     ```
 
-3.  **Process the product data:**
+3.  **The build process runs automatically inside the container.**
 
-    The initial product data is provided as JSON files in the `data/json/products_by_id` directory. To process this data and populate the SQLite database, run the following command:
+    The database will be populated automatically if it's empty. To force a rebuild:
 
     ```bash
-    docker-compose exec api composer process:products
+    docker-compose exec api composer db:rebuild
     ```
 
-    This command will read the JSON files, process the data, and insert it into the SQLite database located at `data/sqlite/database.sqlite`.
+### Manual Setup (Advanced)
+
+If you need more control over the setup process:
+
+1.  **Install dependencies (without running build):**
+
+    ```bash
+    composer install --no-scripts
+    ```
+
+2.  **Generate OpenAPI documentation:**
+
+    ```bash
+    composer docs:generate
+    ```
+
+3.  **Setup database:**
+
+    ```bash
+    # Interactive mode (asks for confirmation)
+    php bin/tackle.php
+
+    # Skip if database already has data
+    php bin/tackle.php --skip-if-exists
+
+    # Force rebuild (WARNING: deletes all data)
+    php bin/tackle.php --force
+    ```
+
+4.  **Clear cache:**
+
+    ```bash
+    composer app:clear-cache
+    ```
+
+## Available Commands
+
+### Composer Scripts
+
+```bash
+# Full build process (runs automatically after composer install/update)
+composer build
+
+# Generate OpenAPI documentation
+composer docs:generate
+
+# Setup database (skips if already populated - safe for production)
+composer db:setup
+
+# Force rebuild database (WARNING: deletes all data)
+composer db:rebuild
+
+# Clear PHP opcache
+composer app:clear-cache
+
+# List all available scripts
+composer run-script --list
+```
+
+### Database Setup Tool
+
+The `bin/tackle.php` script provides flexible database management:
+
+```bash
+# Interactive mode (asks for confirmation)
+php bin/tackle.php
+
+# Skip if database already has data (safe for production)
+php bin/tackle.php --skip-if-exists
+
+# Force rebuild (WARNING: deletes all data)
+php bin/tackle.php --force
+
+# Show help
+php bin/tackle.php --help
+```
+
+**Environment Variables:**
+
+```bash
+# Set environment (default: production)
+export APP_ENV=development
+php bin/tackle.php
+
+# Production requires --force flag
+export APP_ENV=production
+php bin/tackle.php --force
+```
 
 ## API Documentation
 
@@ -49,6 +173,12 @@ The API documentation is available in two formats:
 
 -   **Swagger UI**: `http://localhost:8080/cosmos/swagger-ui`
 -   **OpenAPI JSON**: `http://localhost:8080/cosmos/openapi.json`
+
+The OpenAPI documentation is automatically generated from PHP annotations using `swagger-php`. To regenerate:
+
+```bash
+composer docs:generate
+```
 
 ### API Key
 

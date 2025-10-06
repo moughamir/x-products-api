@@ -3,16 +3,14 @@
 /**
  * OpenAPI Documentation Generator Wrapper
  *
- * This wrapper script fixes the PHP 8.4 E_STRICT deprecation warning
- * in swagger-php by suppressing deprecation notices during generation.
+ * This wrapper script provides PHP version-aware OpenAPI generation:
+ * - PHP 8.4+: Filters E_STRICT deprecation warnings from swagger-php
+ * - PHP 8.2/8.3: Passes through to vendor/bin/openapi directly
  *
  * The E_STRICT constant was deprecated in PHP 8.4 because strict mode
  * is now always enabled. The swagger-php library still references it
  * in their error handling code.
  */
-
-// Suppress deprecation warnings during OpenAPI generation
-error_reporting(E_ALL & ~E_DEPRECATED);
 
 // Get the arguments passed to this script
 $args = array_slice($argv, 1);
@@ -26,13 +24,23 @@ if (!file_exists($openapiPath)) {
     exit(1);
 }
 
-// Pass all arguments to the openapi binary
+// Check PHP version - only use wrapper filtering for PHP 8.4+
+$phpVersion = PHP_VERSION_ID;
+$needsFiltering = $phpVersion >= 80400; // PHP 8.4.0 or higher
+
+// Build the command
 $command = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($openapiPath);
 foreach ($args as $arg) {
     $command .= ' ' . escapeshellarg($arg);
 }
 
-// Execute the command and filter out E_STRICT deprecation warnings
+// For PHP < 8.4, just execute directly without filtering
+if (!$needsFiltering) {
+    passthru($command, $exitCode);
+    exit($exitCode);
+}
+
+// For PHP 8.4+, execute with E_STRICT warning filtering
 $descriptors = [
     0 => ['pipe', 'r'],  // stdin
     1 => ['pipe', 'w'],  // stdout
@@ -68,9 +76,6 @@ if (is_resource($process)) {
     fwrite(STDERR, "Error: Failed to execute openapi command\n");
     $exitCode = 1;
 }
-
-// Restore error reporting
-error_reporting(E_ALL);
 
 exit($exitCode);
 
