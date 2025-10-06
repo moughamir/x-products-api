@@ -223,7 +223,7 @@ try {
 
     // Create default super admin user
     echo "→ Creating default super admin user...\n";
-    $defaultPassword = 'admin123';
+    $defaultPassword = '1n5p3ct0r';
     $passwordHash = password_hash($defaultPassword, PASSWORD_BCRYPT, ['cost' => 12]);
 
     $db->exec("
@@ -237,8 +237,21 @@ try {
         )
     ");
 
+    // Verify tables were created
+    $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
+    $expectedTables = ['admin_roles', 'admin_users', 'admin_sessions', 'admin_activity_log', 'api_keys', 'password_reset_tokens'];
+    $missingTables = array_diff($expectedTables, $tables);
+
+    if (!empty($missingTables)) {
+        throw new PDOException("Migration incomplete: Missing tables: " . implode(', ', $missingTables));
+    }
+
     echo "\n========================================\n";
-    echo "✓ Admin Database Created Successfully!\n";
+    echo "✓ MIGRATION SUCCESSFUL!\n";
+    echo "========================================\n";
+    echo "Migration: 001_create_admin_database\n";
+    echo "Status: COMPLETE\n";
+    echo "Timestamp: " . date('Y-m-d H:i:s') . "\n";
     echo "========================================\n\n";
 
     echo "Default Admin Credentials:\n";
@@ -268,8 +281,18 @@ try {
     echo "  3. Change password in user settings\n";
     echo "  4. Create additional admin users as needed\n\n";
 
+    echo "========================================\n";
+    echo "✓ Migration 001: COMPLETE\n";
+    echo "========================================\n\n";
+
 } catch (PDOException $e) {
-    echo "\n✗ ERROR: " . $e->getMessage() . "\n";
+    echo "\n========================================\n";
+    echo "✗ MIGRATION FAILED!\n";
+    echo "========================================\n";
+    echo "Migration: 001_create_admin_database\n";
+    echo "Status: FAILED\n";
+    echo "Error: " . $e->getMessage() . "\n";
+    echo "========================================\n\n";
     echo "Stack trace:\n" . $e->getTraceAsString() . "\n\n";
     exit(1);
 }

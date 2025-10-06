@@ -11,7 +11,7 @@ This directory contains all command-line scripts for managing the X-Products API
 | `optimize-database.php` | Database optimization | Weekly |
 | `rotate-featured-items.php` | Featured items rotation | Daily |
 | `clean-sessions.php` | Session cleanup | Daily |
-| `backup-databases.sh` | Database backup | Daily |
+| `backup-databases.sh` | Database backup | Monthly (1st of month) |
 | `analyze-data.sh` | Data analysis | As needed |
 | `generate-openapi.php` | API documentation | Daily |
 | `setup-cron-jobs.sh` | Cron configuration | Once |
@@ -206,7 +206,7 @@ bash bin/backup-databases.sh
 
 **Backup location:** `backups/`
 **Retention:** 30 days
-**When to use:** Daily (automated via cron)
+**When to use:** Monthly on 1st (automated via cron)
 
 ---
 
@@ -225,10 +225,10 @@ php bin/generate-openapi.php src -o openapi.yaml --format yaml
 ```
 
 **Features:**
-- ✅ PHP 8.4+ compatibility
+- ✅ PHP 8.2+ compatibility (tested on PHP 8.2.27, 8.3, and 8.4+)
 - ✅ Production environment support
 - ✅ Output file verification
-- ✅ Error filtering
+- ✅ Error filtering (automatic for PHP 8.4+)
 
 **When to use:** After API changes (automated via cron)
 
@@ -248,7 +248,7 @@ bash bin/setup-cron-jobs.sh
 
 | Time | Task | Purpose |
 |------|------|---------|
-| 1:00 AM | Database Backup | Daily backups |
+| 1:00 AM (1st) | Database Backup | Monthly backups |
 | 2:00 AM | Featured Rotation | Keep content fresh |
 | 3:00 AM (Sun) | Database Optimization | Weekly maintenance |
 | 4:00 AM | Clean Sessions | Remove expired sessions |

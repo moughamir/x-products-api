@@ -139,8 +139,21 @@ try {
 
     echo "  ✓ Inserted {$settingsCount} default settings\n";
 
+    // Verify tables were created
+    $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
+    $expectedTables = ['api_keys', 'settings'];
+    $missingTables = array_diff($expectedTables, $tables);
+
+    if (!empty($missingTables)) {
+        throw new PDOException("Migration incomplete: Missing tables: " . implode(', ', $missingTables));
+    }
+
     echo "\n========================================\n";
-    echo "✓ Migration Completed Successfully!\n";
+    echo "✓ MIGRATION SUCCESSFUL!\n";
+    echo "========================================\n";
+    echo "Migration: 003_add_api_keys_and_settings\n";
+    echo "Status: COMPLETE\n";
+    echo "Timestamp: " . date('Y-m-d H:i:s') . "\n";
     echo "========================================\n\n";
 
     echo "Tables Created:\n";
@@ -155,8 +168,18 @@ try {
     echo "  2. Configure application settings\n";
     echo "  3. Generate API keys for external access\n\n";
 
+    echo "========================================\n";
+    echo "✓ Migration 003: COMPLETE\n";
+    echo "========================================\n\n";
+
 } catch (PDOException $e) {
-    echo "\n✗ ERROR: " . $e->getMessage() . "\n";
+    echo "\n========================================\n";
+    echo "✗ MIGRATION FAILED!\n";
+    echo "========================================\n";
+    echo "Migration: 003_add_api_keys_and_settings\n";
+    echo "Status: FAILED\n";
+    echo "Error: " . $e->getMessage() . "\n";
+    echo "========================================\n\n";
     echo "Stack trace:\n" . $e->getTraceAsString() . "\n\n";
     exit(1);
 }

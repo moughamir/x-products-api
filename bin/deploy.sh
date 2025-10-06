@@ -141,7 +141,7 @@ print_step "Project structure validated"
 print_header "Step 2: Setting File Permissions"
 print_info "Running prepare.sh..."
 
-if bash bin/prepare.sh; then
+if bash $PROJECT_ROOT/bin/prepare.sh; then
     print_step "File permissions set successfully"
 else
     print_error "Failed to set file permissions"

@@ -291,8 +291,21 @@ try {
         echo "  ✓ Created collection: {$collection['title']}\n";
     }
 
+    // Verify tables were created
+    $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
+    $expectedTables = ['collections', 'product_collections', 'categories', 'product_categories', 'tags', 'product_tags'];
+    $missingTables = array_diff($expectedTables, $tables);
+
+    if (!empty($missingTables)) {
+        throw new PDOException("Migration incomplete: Missing tables: " . implode(', ', $missingTables));
+    }
+
     echo "\n========================================\n";
-    echo "✓ Products Database Extended Successfully!\n";
+    echo "✓ MIGRATION SUCCESSFUL!\n";
+    echo "========================================\n";
+    echo "Migration: 002_extend_products_database\n";
+    echo "Status: COMPLETE\n";
+    echo "Timestamp: " . date('Y-m-d H:i:s') . "\n";
     echo "========================================\n\n";
 
     echo "Tables Created:\n";
@@ -316,8 +329,18 @@ try {
     echo "  2. Create categories for product organization\n";
     echo "  3. Assign products to collections and categories\n\n";
 
+    echo "========================================\n";
+    echo "✓ Migration 002: COMPLETE\n";
+    echo "========================================\n\n";
+
 } catch (PDOException $e) {
-    echo "\n✗ ERROR: " . $e->getMessage() . "\n";
+    echo "\n========================================\n";
+    echo "✗ MIGRATION FAILED!\n";
+    echo "========================================\n";
+    echo "Migration: 002_extend_products_database\n";
+    echo "Status: FAILED\n";
+    echo "Error: " . $e->getMessage() . "\n";
+    echo "========================================\n\n";
     echo "Stack trace:\n" . $e->getTraceAsString() . "\n\n";
     exit(1);
 }

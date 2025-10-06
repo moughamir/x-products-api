@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Cosmos Admin</title>
-    
+
     <!-- Tailwind CSS + DaisyUI from CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" />
-    
+
     <!-- Alpine.js for simple interactions -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
 </head>
@@ -35,18 +35,18 @@
                 <!-- Login Form -->
                 <form method="POST" action="/cosmos/admin/login" x-data="{ loading: false }" @submit="loading = true">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    
+
                     <!-- Username Field -->
                     <div class="form-control mb-4">
                         <label class="label">
                             <span class="label-text">Username</span>
                         </label>
-                        <input 
-                            type="text" 
-                            name="username" 
-                            placeholder="Enter your username" 
-                            class="input input-bordered w-full" 
-                            required 
+                        <input
+                            type="text"
+                            name="username"
+                            placeholder="Enter your username"
+                            class="input input-bordered w-full"
+                            required
                             autofocus
                             autocomplete="username"
                         />
@@ -57,11 +57,11 @@
                         <label class="label">
                             <span class="label-text">Password</span>
                         </label>
-                        <input 
-                            type="password" 
-                            name="password" 
-                            placeholder="Enter your password" 
-                            class="input input-bordered w-full" 
+                        <input
+                            type="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            class="input input-bordered w-full"
                             required
                             autocomplete="current-password"
                         />
@@ -72,8 +72,8 @@
 
                     <!-- Submit Button -->
                     <div class="form-control">
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             class="btn btn-primary w-full"
                             :class="{ 'loading': loading }"
                             :disabled="loading"
@@ -87,7 +87,7 @@
                 <!-- Footer -->
                 <div class="divider"></div>
                 <div class="text-center text-sm text-base-content/60">
-                    <p>Default credentials: <code class="bg-base-200 px-2 py-1 rounded">admin / admin123</code></p>
+                    <p>Default credentials: <code class="bg-base-200 px-2 py-1 rounded">super / repus</code></p>
                     <p class="mt-2 text-xs text-warning">⚠️ Change password after first login!</p>
                 </div>
             </div>
