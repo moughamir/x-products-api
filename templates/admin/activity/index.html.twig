@@ -1,0 +1,104 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}Activity Log{% endblock %}
+{% block page_title %}Activity Log{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold">Activity Log</h2>
+        <p class="text-sm text-base-content/60">View all admin actions and changes</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-body">
+            <form method="GET" action="/cosmos/admin/activity" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="form-control">
+                    <label class="label"><span class="label-text">User</span></label>
+                    <select name="user_id" class="select select-bordered">
+                        <option value="">All Users</option>
+                        {% for u in users %}
+                        <option value="{{ u.id }}" {% if filters.user_id == u.id %}selected{% endif %}>{{ u.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Action</span></label>
+                    <select name="action" class="select select-bordered">
+                        <option value="">All Actions</option>
+                        {% for action in actions %}
+                        <option value="{{ action }}" {% if filters.action == action %}selected{% endif %}>{{ action }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Entity Type</span></label>
+                    <select name="entity_type" class="select select-bordered">
+                        <option value="">All Types</option>
+                        {% for type in entity_types %}
+                        <option value="{{ type }}" {% if filters.entity_type == type %}selected{% endif %}>{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-control flex flex-row gap-2 items-end">
+                    <button type="submit" class="btn btn-primary flex-1">Filter</button>
+                    <a href="/cosmos/admin/activity" class="btn btn-ghost flex-1">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Activity Table -->
+    <div class="card bg-base-100 shadow-md">
+        <div class="card-body">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Entity</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if activities is empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-8 text-base-content/60">No activity found</td>
+                        </tr>
+                        {% else %}
+                        {% for activity in activities %}
+                        <tr>
+                            <td class="text-xs">{{ activity.created_at }}</td>
+                            <td>{{ activity.username }}</td>
+                            <td>
+                                <span class="badge badge-sm
+                                    {% if activity.action == 'create' %}badge-success
+                                    {% elseif activity.action == 'update' %}badge-info
+                                    {% elseif activity.action == 'delete' %}badge-error
+                                    {% else %}badge-ghost{% endif %}">
+                                    {{ activity.action }}
+                                </span>
+                            </td>
+                            <td><code class="text-xs">{{ activity.entity_type }}</code></td>
+                            <td class="text-sm">{{ activity.details }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="text-center text-sm text-base-content/60 mt-4">
+                Showing {{ activities|length }} of {{ total_activities }} activities
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

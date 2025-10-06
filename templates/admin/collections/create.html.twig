@@ -1,0 +1,55 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}Create Collection{% endblock %}
+{% block page_title %}Create Collection{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-6">
+        <a href="/cosmos/admin/collections" class="btn btn-ghost btn-sm">← Back to Collections</a>
+    </div>
+
+    <form method="POST" action="/cosmos/admin/collections" class="space-y-6">
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <h3 class="card-title">Basic Information</h3>
+                
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Title *</span></label>
+                    <input type="text" name="title" required class="input input-bordered">
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Handle</span></label>
+                    <input type="text" name="handle" class="input input-bordered" placeholder="auto-generated">
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Description</span></label>
+                    <textarea name="description" rows="4" class="textarea textarea-bordered"></textarea>
+                </div>
+
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start">
+                        <input type="checkbox" name="is_smart" class="checkbox mr-2" id="is_smart">
+                        <span class="label-text">Smart Collection (auto-populate based on rules)</span>
+                    </label>
+                </div>
+
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start">
+                        <input type="checkbox" name="is_featured" class="checkbox mr-2">
+                        <span class="label-text">Featured Collection</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-4">
+            <button type="submit" class="btn btn-primary">Create Collection</button>
+            <a href="/cosmos/admin/collections" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

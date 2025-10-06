@@ -1,0 +1,136 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}Edit Product{% endblock %}
+{% block page_title %}Edit Product{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-6">
+        <a href="/cosmos/admin/products" class="btn btn-ghost btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Products
+        </a>
+    </div>
+
+    <form method="POST" action="/cosmos/admin/products/{{ product.id }}" class="space-y-6">
+        <!-- Basic Information -->
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <h3 class="card-title">Basic Information</h3>
+                
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Title *</span></label>
+                    <input type="text" name="title" value="{{ product.title }}" required class="input input-bordered">
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Handle</span></label>
+                    <input type="text" name="handle" value="{{ product.handle }}" class="input input-bordered">
+                    <label class="label"><span class="label-text-alt">URL-friendly identifier</span></label>
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Description</span></label>
+                    <textarea name="body_html" rows="6" class="textarea textarea-bordered">{{ product.body_html }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing -->
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <h3 class="card-title">Pricing</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Price *</span></label>
+                        <input type="number" name="price" value="{{ product.price }}" step="0.01" required class="input input-bordered">
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Compare at Price</span></label>
+                        <input type="number" name="compare_at_price" value="{{ product.compare_at_price }}" step="0.01" class="input input-bordered">
+                        <label class="label"><span class="label-text-alt">Original price for sale items</span></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Organization -->
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <h3 class="card-title">Organization</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Vendor</span></label>
+                        <input type="text" name="vendor" value="{{ product.vendor }}" class="input input-bordered">
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Product Type</span></label>
+                        <input type="text" name="product_type" value="{{ product.product_type }}" class="input input-bordered">
+                    </div>
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Tags</span></label>
+                    <input type="text" name="tags" value="{{ product.tags }}" class="input input-bordered" placeholder="tag1, tag2, tag3">
+                    <label class="label"><span class="label-text-alt">Comma-separated tags</span></label>
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Collections</span></label>
+                    <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-base-300 rounded-lg p-4">
+                        {% for collection in collections %}
+                        <label class="label cursor-pointer justify-start">
+                            <input type="checkbox" name="collections[]" value="{{ collection.id }}" 
+                                {% if collection.id in assigned_collections %}checked{% endif %}
+                                class="checkbox checkbox-sm mr-2">
+                            <span class="label-text">{{ collection.title }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Categories</span></label>
+                    <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-base-300 rounded-lg p-4">
+                        {% for category in categories %}
+                        <label class="label cursor-pointer justify-start">
+                            <input type="checkbox" name="categories[]" value="{{ category.id }}"
+                                {% if category.id in assigned_categories %}checked{% endif %}
+                                class="checkbox checkbox-sm mr-2">
+                            <span class="label-text">{{ category.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory -->
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <h3 class="card-title">Inventory</h3>
+                
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start">
+                        <input type="checkbox" name="in_stock" value="1" {% if product.in_stock %}checked{% endif %} class="checkbox mr-2">
+                        <span class="label-text">In Stock</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-4">
+            <button type="submit" class="btn btn-primary">Update Product</button>
+            <a href="/cosmos/admin/products" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

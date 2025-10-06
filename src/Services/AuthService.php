@@ -92,7 +92,7 @@ class AuthService
 
         if ($session) {
             $session['permissions'] = json_decode($session['permissions'], true);
-            
+
             // Update last activity
             $this->updateSessionActivity($sessionId);
         }
@@ -216,6 +216,57 @@ class AuthService
         }
 
         return hash_equals($_SESSION['csrf_token'], $token);
+    }
+
+    /**
+     * Update user profile
+     */
+    public function updateProfile(int $userId, array $data): bool
+    {
+        $stmt = $this->db->prepare("
+            UPDATE admin_users
+            SET username = :username,
+                email = :email,
+                full_name = :full_name,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id
+        ");
+
+        return $stmt->execute([
+            'id' => $userId,
+            'username' => $data['username'],
+            'email' => $data['email'],
+            'full_name' => $data['full_name'] ?? null,
+        ]);
+    }
+
+    /**
+     * Change user password
+     */
+    public function changePassword(int $userId, string $currentPassword, string $newPassword): bool
+    {
+        // Verify current password
+        $stmt = $this->db->prepare("SELECT password_hash FROM admin_users WHERE id = :id");
+        $stmt->execute(['id' => $userId]);
+        $user = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
+            return false;
+        }
+
+        // Update password
+        $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
+        $stmt = $this->db->prepare("
+            UPDATE admin_users
+            SET password_hash = :password_hash,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id
+        ");
+
+        return $stmt->execute([
+            'id' => $userId,
+            'password_hash' => $newHash,
+        ]);
     }
 }
 

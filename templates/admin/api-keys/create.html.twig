@@ -1,0 +1,41 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}Generate API Key{% endblock %}
+{% block page_title %}Generate API Key{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-6">
+        <a href="/cosmos/admin/api-keys" class="btn btn-ghost btn-sm">← Back to API Keys</a>
+    </div>
+
+    <form method="POST" action="/cosmos/admin/api-keys" class="space-y-6">
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Name *</span></label>
+                    <input type="text" name="name" required class="input input-bordered" placeholder="e.g., Production API Key">
+                    <label class="label"><span class="label-text-alt">A descriptive name for this API key</span></label>
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Rate Limit (requests/minute)</span></label>
+                    <input type="number" name="rate_limit" value="60" class="input input-bordered">
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Expires At</span></label>
+                    <input type="datetime-local" name="expires_at" class="input input-bordered">
+                    <label class="label"><span class="label-text-alt">Leave empty for no expiration</span></label>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-4">
+            <button type="submit" class="btn btn-primary">Generate API Key</button>
+            <a href="/cosmos/admin/api-keys" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

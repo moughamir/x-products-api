@@ -1,0 +1,44 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}Create Category{% endblock %}
+{% block page_title %}Create Category{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-6">
+        <a href="/cosmos/admin/categories" class="btn btn-ghost btn-sm">← Back to Categories</a>
+    </div>
+
+    <form method="POST" action="/cosmos/admin/categories" class="space-y-6">
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Name *</span></label>
+                    <input type="text" name="name" required class="input input-bordered">
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Description</span></label>
+                    <textarea name="description" rows="4" class="textarea textarea-bordered"></textarea>
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Parent Category</span></label>
+                    <select name="parent_id" class="select select-bordered">
+                        <option value="">None (Top Level)</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.indent }} {{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-4">
+            <button type="submit" class="btn btn-primary">Create Category</button>
+            <a href="/cosmos/admin/categories" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

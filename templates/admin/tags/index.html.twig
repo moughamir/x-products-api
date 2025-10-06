@@ -1,0 +1,80 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}Tags{% endblock %}
+{% block page_title %}Tags{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    {% if success %}
+    <div class="alert alert-success mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ success }}</span>
+    </div>
+    {% endif %}
+
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-bold">Tags</h2>
+            <p class="text-sm text-base-content/60">{{ stats.total_tags }} total tags, {{ stats.used_tags }} in use</p>
+        </div>
+        <div class="flex gap-2">
+            <form method="POST" action="/cosmos/admin/tags/cleanup-unused" onsubmit="return confirm('Delete all unused tags?');">
+                <button type="submit" class="btn btn-ghost btn-sm">Cleanup Unused ({{ stats.unused_tags }})</button>
+            </form>
+            <a href="/cosmos/admin/tags/new" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Tag
+            </a>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-md">
+        <div class="card-body">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Slug</th>
+                            <th>Products</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if tags is empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-8 text-base-content/60">
+                                No tags found. <a href="/cosmos/admin/tags/new" class="link link-primary">Create your first tag</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        {% for tag in tags %}
+                        <tr>
+                            <td>{{ tag.id }}</td>
+                            <td>{{ tag.name }}</td>
+                            <td><code class="text-xs">{{ tag.slug }}</code></td>
+                            <td>{{ tag.product_count ?? 0 }}</td>
+                            <td>
+                                <div class="flex gap-2">
+                                    <a href="/cosmos/admin/tags/{{ tag.id }}/edit" class="btn btn-sm btn-ghost">Edit</a>
+                                    <form method="POST" action="/cosmos/admin/tags/{{ tag.id }}/delete" onsubmit="return confirm('Are you sure?');">
+                                        <button type="submit" class="btn btn-sm btn-ghost text-error">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

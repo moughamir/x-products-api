@@ -1,0 +1,93 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}Categories{% endblock %}
+{% block page_title %}Categories{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    {% if success %}
+    <div class="alert alert-success mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ success }}</span>
+    </div>
+    {% endif %}
+
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-bold">Categories</h2>
+            <p class="text-sm text-base-content/60">Organize products into hierarchical categories</p>
+        </div>
+        <a href="/cosmos/admin/categories/new" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Category
+        </a>
+    </div>
+
+    <div class="card bg-base-100 shadow-md">
+        <div class="card-body">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Slug</th>
+                            <th>Products</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if categories is empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-8 text-base-content/60">
+                                No categories found. <a href="/cosmos/admin/categories/new" class="link link-primary">Create your first category</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        {% for category in categories %}
+                        <tr>
+                            <td>{{ category.id }}</td>
+                            <td>{{ category.name }}</td>
+                            <td><code class="text-xs">{{ category.slug }}</code></td>
+                            <td>{{ category.product_count ?? 0 }}</td>
+                            <td>
+                                <div class="flex gap-2">
+                                    <a href="/cosmos/admin/categories/{{ category.id }}/edit" class="btn btn-sm btn-ghost">Edit</a>
+                                    <form method="POST" action="/cosmos/admin/categories/{{ category.id }}/delete" onsubmit="return confirm('Are you sure?');">
+                                        <button type="submit" class="btn btn-sm btn-ghost text-error">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% if category.children is defined %}
+                            {% for child in category.children %}
+                            <tr>
+                                <td>{{ child.id }}</td>
+                                <td class="pl-8">└─ {{ child.name }}</td>
+                                <td><code class="text-xs">{{ child.slug }}</code></td>
+                                <td>{{ child.product_count ?? 0 }}</td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <a href="/cosmos/admin/categories/{{ child.id }}/edit" class="btn btn-sm btn-ghost">Edit</a>
+                                        <form method="POST" action="/cosmos/admin/categories/{{ child.id }}/delete" onsubmit="return confirm('Are you sure?');">
+                                            <button type="submit" class="btn btn-sm btn-ghost text-error">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
+                        {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

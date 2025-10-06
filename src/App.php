@@ -134,6 +134,45 @@ class App
 
             UserController::class => \DI\autowire()
                 ->constructorParameter('adminDb', get('AdminPDO')),
+
+            // Product Management Controllers
+            \App\Controllers\Admin\ProductController::class => \DI\autowire()
+                ->constructorParameter('productsDb', get(PDO::class)),
+
+            \App\Controllers\Admin\CollectionController::class => \DI\autowire()
+                ->constructorParameter('db', get(PDO::class)),
+
+            \App\Controllers\Admin\CategoryController::class => \DI\autowire()
+                ->constructorParameter('db', get(PDO::class)),
+
+            \App\Controllers\Admin\TagController::class => \DI\autowire()
+                ->constructorParameter('db', get(PDO::class)),
+
+            \App\Controllers\Admin\ApiKeyController::class => \DI\autowire(),
+
+            \App\Controllers\Admin\ActivityController::class => \DI\autowire()
+                ->constructorParameter('adminDb', get('AdminPDO')),
+
+            \App\Controllers\Admin\ProfileController::class => \DI\autowire(),
+
+            \App\Controllers\Admin\SettingsController::class => \DI\autowire()
+                ->constructorParameter('adminDb', get('AdminPDO')),
+
+            // Services
+            \App\Services\ProductManagementService::class => \DI\autowire()
+                ->constructorParameter('db', get(PDO::class)),
+
+            \App\Services\CollectionService::class => \DI\autowire()
+                ->constructorParameter('db', get(PDO::class)),
+
+            \App\Services\CategoryService::class => \DI\autowire()
+                ->constructorParameter('db', get(PDO::class)),
+
+            \App\Services\TagService::class => \DI\autowire()
+                ->constructorParameter('db', get(PDO::class)),
+
+            \App\Services\ApiKeyService::class => \DI\autowire()
+                ->constructorParameter('db', get('AdminPDO')),
         ]);
 
         $container = $containerBuilder->build();
@@ -183,13 +222,41 @@ class App
             $group->get('/', [DashboardController::class, 'index'])->add(AdminAuthMiddleware::class);
             $group->get('/logout', [AuthController::class, 'logout'])->add(AdminAuthMiddleware::class);
 
-            // Product Management Routes (Placeholder)
-            $group->get('/products', [PlaceholderController::class, 'placeholder'])->add(AdminAuthMiddleware::class);
-            $group->get('/products/new', [PlaceholderController::class, 'placeholder'])->add(AdminAuthMiddleware::class);
-            $group->get('/collections', [PlaceholderController::class, 'placeholder'])->add(AdminAuthMiddleware::class);
-            $group->get('/collections/new', [PlaceholderController::class, 'placeholder'])->add(AdminAuthMiddleware::class);
-            $group->get('/categories', [PlaceholderController::class, 'placeholder'])->add(AdminAuthMiddleware::class);
-            $group->get('/tags', [PlaceholderController::class, 'placeholder'])->add(AdminAuthMiddleware::class);
+            // Product Management Routes
+            $group->get('/products', [\App\Controllers\Admin\ProductController::class, 'index'])->add(AdminAuthMiddleware::class);
+            $group->get('/products/new', [\App\Controllers\Admin\ProductController::class, 'create'])->add(AdminAuthMiddleware::class);
+            $group->post('/products', [\App\Controllers\Admin\ProductController::class, 'store'])->add(AdminAuthMiddleware::class);
+            $group->post('/products/bulk-delete', [\App\Controllers\Admin\ProductController::class, 'bulkDelete'])->add(AdminAuthMiddleware::class);
+            $group->get('/products/{id}/edit', [\App\Controllers\Admin\ProductController::class, 'edit'])->add(AdminAuthMiddleware::class);
+            $group->post('/products/{id}', [\App\Controllers\Admin\ProductController::class, 'update'])->add(AdminAuthMiddleware::class);
+            $group->post('/products/{id}/delete', [\App\Controllers\Admin\ProductController::class, 'delete'])->add(AdminAuthMiddleware::class);
+
+            // Collections Management
+            $group->get('/collections', [\App\Controllers\Admin\CollectionController::class, 'index'])->add(AdminAuthMiddleware::class);
+            $group->get('/collections/new', [\App\Controllers\Admin\CollectionController::class, 'create'])->add(AdminAuthMiddleware::class);
+            $group->post('/collections', [\App\Controllers\Admin\CollectionController::class, 'store'])->add(AdminAuthMiddleware::class);
+            $group->get('/collections/{id}/edit', [\App\Controllers\Admin\CollectionController::class, 'edit'])->add(AdminAuthMiddleware::class);
+            $group->post('/collections/{id}', [\App\Controllers\Admin\CollectionController::class, 'update'])->add(AdminAuthMiddleware::class);
+            $group->post('/collections/{id}/delete', [\App\Controllers\Admin\CollectionController::class, 'delete'])->add(AdminAuthMiddleware::class);
+            $group->post('/collections/{id}/sync', [\App\Controllers\Admin\CollectionController::class, 'sync'])->add(AdminAuthMiddleware::class);
+
+            // Categories Management
+            $group->get('/categories', [\App\Controllers\Admin\CategoryController::class, 'index'])->add(AdminAuthMiddleware::class);
+            $group->get('/categories/new', [\App\Controllers\Admin\CategoryController::class, 'create'])->add(AdminAuthMiddleware::class);
+            $group->post('/categories', [\App\Controllers\Admin\CategoryController::class, 'store'])->add(AdminAuthMiddleware::class);
+            $group->get('/categories/{id}/edit', [\App\Controllers\Admin\CategoryController::class, 'edit'])->add(AdminAuthMiddleware::class);
+            $group->post('/categories/{id}', [\App\Controllers\Admin\CategoryController::class, 'update'])->add(AdminAuthMiddleware::class);
+            $group->post('/categories/{id}/delete', [\App\Controllers\Admin\CategoryController::class, 'delete'])->add(AdminAuthMiddleware::class);
+
+            // Tags Management
+            $group->get('/tags', [\App\Controllers\Admin\TagController::class, 'index'])->add(AdminAuthMiddleware::class);
+            $group->get('/tags/new', [\App\Controllers\Admin\TagController::class, 'create'])->add(AdminAuthMiddleware::class);
+            $group->post('/tags', [\App\Controllers\Admin\TagController::class, 'store'])->add(AdminAuthMiddleware::class);
+            $group->post('/tags/bulk-delete', [\App\Controllers\Admin\TagController::class, 'bulkDelete'])->add(AdminAuthMiddleware::class);
+            $group->post('/tags/cleanup-unused', [\App\Controllers\Admin\TagController::class, 'cleanupUnused'])->add(AdminAuthMiddleware::class);
+            $group->get('/tags/{id}/edit', [\App\Controllers\Admin\TagController::class, 'edit'])->add(AdminAuthMiddleware::class);
+            $group->post('/tags/{id}', [\App\Controllers\Admin\TagController::class, 'update'])->add(AdminAuthMiddleware::class);
+            $group->post('/tags/{id}/delete', [\App\Controllers\Admin\TagController::class, 'delete'])->add(AdminAuthMiddleware::class);
 
             // System Routes
             // User Management (Full CRUD)
@@ -200,13 +267,23 @@ class App
             $group->post('/users/{id}', [UserController::class, 'update'])->add(AdminAuthMiddleware::class);
             $group->post('/users/{id}/delete', [UserController::class, 'delete'])->add(AdminAuthMiddleware::class);
 
-            // Activity Log & API Keys (Placeholder)
-            $group->get('/activity', [PlaceholderController::class, 'placeholder'])->add(AdminAuthMiddleware::class);
-            $group->get('/api-keys', [PlaceholderController::class, 'placeholder'])->add(AdminAuthMiddleware::class);
+            // Activity Log
+            $group->get('/activity', [\App\Controllers\Admin\ActivityController::class, 'index'])->add(AdminAuthMiddleware::class);
 
-            // User Profile Routes (Placeholder)
-            $group->get('/profile', [PlaceholderController::class, 'placeholder'])->add(AdminAuthMiddleware::class);
-            $group->get('/settings', [PlaceholderController::class, 'placeholder'])->add(AdminAuthMiddleware::class);
+            // API Keys Management
+            $group->get('/api-keys', [\App\Controllers\Admin\ApiKeyController::class, 'index'])->add(AdminAuthMiddleware::class);
+            $group->get('/api-keys/new', [\App\Controllers\Admin\ApiKeyController::class, 'create'])->add(AdminAuthMiddleware::class);
+            $group->post('/api-keys', [\App\Controllers\Admin\ApiKeyController::class, 'store'])->add(AdminAuthMiddleware::class);
+            $group->post('/api-keys/{id}/delete', [\App\Controllers\Admin\ApiKeyController::class, 'delete'])->add(AdminAuthMiddleware::class);
+
+            // User Profile Routes
+            $group->get('/profile', [\App\Controllers\Admin\ProfileController::class, 'index'])->add(AdminAuthMiddleware::class);
+            $group->post('/profile', [\App\Controllers\Admin\ProfileController::class, 'update'])->add(AdminAuthMiddleware::class);
+            $group->post('/profile/change-password', [\App\Controllers\Admin\ProfileController::class, 'changePassword'])->add(AdminAuthMiddleware::class);
+
+            // Settings
+            $group->get('/settings', [\App\Controllers\Admin\SettingsController::class, 'index'])->add(AdminAuthMiddleware::class);
+            $group->post('/settings', [\App\Controllers\Admin\SettingsController::class, 'update'])->add(AdminAuthMiddleware::class);
         });
 
         return $app;

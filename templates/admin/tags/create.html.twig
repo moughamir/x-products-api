@@ -1,0 +1,29 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}Create Tag{% endblock %}
+{% block page_title %}Create Tag{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-6">
+        <a href="/cosmos/admin/tags" class="btn btn-ghost btn-sm">← Back to Tags</a>
+    </div>
+
+    <form method="POST" action="/cosmos/admin/tags" class="space-y-6">
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Name *</span></label>
+                    <input type="text" name="name" required class="input input-bordered" placeholder="Tag name">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-4">
+            <button type="submit" class="btn btn-primary">Create Tag</button>
+            <a href="/cosmos/admin/tags" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

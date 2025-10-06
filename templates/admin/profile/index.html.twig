@@ -1,0 +1,115 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    {% if success %}
+    <div class="alert alert-success mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ success }}</span>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-error mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Profile Information -->
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <h3 class="card-title">Profile Information</h3>
+                
+                <form method="POST" action="/cosmos/admin/profile" class="space-y-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Username *</span></label>
+                        <input type="text" name="username" value="{{ user.username }}" required class="input input-bordered">
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Email *</span></label>
+                        <input type="email" name="email" value="{{ user.email }}" required class="input input-bordered">
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Full Name</span></label>
+                        <input type="text" name="full_name" value="{{ user.full_name }}" class="input input-bordered">
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Role</span></label>
+                        <input type="text" value="{{ user.role_name }}" disabled class="input input-bordered">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-full">Update Profile</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Change Password -->
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <h3 class="card-title">Change Password</h3>
+                
+                <form method="POST" action="/cosmos/admin/profile/change-password" class="space-y-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Current Password *</span></label>
+                        <input type="password" name="current_password" required class="input input-bordered">
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">New Password *</span></label>
+                        <input type="password" name="new_password" required class="input input-bordered">
+                        <label class="label"><span class="label-text-alt">Minimum 8 characters</span></label>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Confirm New Password *</span></label>
+                        <input type="password" name="confirm_password" required class="input input-bordered">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-full">Change Password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Information -->
+    <div class="card bg-base-100 shadow-md mt-6">
+        <div class="card-body">
+            <h3 class="card-title">Account Information</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <div class="text-sm text-base-content/60">Account Created</div>
+                    <div class="font-medium">{{ user.created_at }}</div>
+                </div>
+                <div>
+                    <div class="text-sm text-base-content/60">Last Updated</div>
+                    <div class="font-medium">{{ user.updated_at ?? 'Never' }}</div>
+                </div>
+                <div>
+                    <div class="text-sm text-base-content/60">Account Status</div>
+                    <div>
+                        {% if user.is_active %}
+                        <span class="badge badge-success">Active</span>
+                        {% else %}
+                        <span class="badge badge-error">Inactive</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

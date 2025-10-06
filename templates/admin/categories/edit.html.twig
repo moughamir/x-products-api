@@ -1,0 +1,53 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}Edit Category{% endblock %}
+{% block page_title %}Edit Category{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-6">
+        <a href="/cosmos/admin/categories" class="btn btn-ghost btn-sm">← Back to Categories</a>
+    </div>
+
+    <form method="POST" action="/cosmos/admin/categories/{{ category.id }}" class="space-y-6">
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Name *</span></label>
+                    <input type="text" name="name" value="{{ category.name }}" required class="input input-bordered">
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Slug</span></label>
+                    <input type="text" name="slug" value="{{ category.slug }}" class="input input-bordered">
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Description</span></label>
+                    <textarea name="description" rows="4" class="textarea textarea-bordered">{{ category.description }}</textarea>
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Parent Category</span></label>
+                    <select name="parent_id" class="select select-bordered">
+                        <option value="">None (Top Level)</option>
+                        {% for cat in categories %}
+                        {% if cat.id != category.id %}
+                        <option value="{{ cat.id }}" {% if cat.id == category.parent_id %}selected{% endif %}>
+                            {{ cat.indent }} {{ cat.name }}
+                        </option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-4">
+            <button type="submit" class="btn btn-primary">Update Category</button>
+            <a href="/cosmos/admin/categories" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
