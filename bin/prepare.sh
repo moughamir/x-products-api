@@ -1,69 +1,112 @@
 #!/bin/bash
-# X-Products API Permission Setup Script - CORRECTED for Hostinger
+# X-Products API Deployment Preparation Script
+# This script prepares the application for production deployment
+
+set -e  # Exit on error
 
 # --- Configuration Variables ---
 CLI_USER=$(whoami)
 DB_FILE="data/sqlite/products.sqlite"
-# We will NOT explicitly define the group, as Hostinger's setup rejects "user:user".
-# We'll rely on the default group membership for 775/664 to work.
+ADMIN_DB_FILE="data/sqlite/admin.sqlite"
+OPENAPI_FILE="openapi.json"
 # -------------------------------
 
-echo "--- X-Products API Permission Setup (CORRECTED Hostinger) ---"
-echo "CLI User (Owner) is: ${CLI_USER}"
+echo "========================================="
+echo "X-Products API Deployment Preparation"
+echo "========================================="
+echo "CLI User (Owner): ${CLI_USER}"
+echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
+echo "========================================="
 
 # --- 1. Validate Project Structure ---
+echo ""
+echo "→ Step 1: Validating project structure..."
 if [ ! -d "data" ] || [ ! -d "src" ] || [ ! -f "bin/tackle.php" ]; then
     echo "❌ ERROR: Cannot find required directories (data/, src/) or file (bin/tackle.php)."
     echo "Please run this script from the root directory of your project."
     exit 1
 fi
+echo "✓ Project structure validated"
 
 
-## 2. Set Ownership and Writable Permissions for Data Directory
-
-echo -e "\n2. Setting ownership and permissions for the 'data/' directory..."
-
-# FIX: Change ownership to only the CLI user.
-# The web process runs as this user, so this ensures write access.
-chown -R "${CLI_USER}" data/
-
-# Give owner and group Read/Write/Execute access (775).
-# The web server will run as the owner and automatically have R/W access to this directory.
-chmod -R 775 data/
-
-echo "   Set ownership of data/ recursively to: ${CLI_USER} (Owner only)."
-echo "   Set directory permissions to 775."
-
-
-## 3. Set Permissions for Critical Files
-
-# 3a. Ensure the SQLite file has the correct file permissions if it exists
-if [ -f "$DB_FILE" ]; then
-    echo "   Setting permissions for database file ${DB_FILE}..."
-    # Grant Read/Write access (664) to the owner and the group.
-    chmod 664 "$DB_FILE"
-    echo "   Set file permissions for ${DB_FILE} to 664 (R/W for owner/group)."
+# --- 2. Generate OpenAPI Specification ---
+echo ""
+echo "→ Step 2: Generating OpenAPI specification..."
+if [ -f "bin/generate-openapi.php" ]; then
+    php bin/generate-openapi.php src -o "$OPENAPI_FILE" --format json
+    if [ -f "$OPENAPI_FILE" ]; then
+        chmod 644 "$OPENAPI_FILE"
+        echo "✓ OpenAPI specification generated: $OPENAPI_FILE"
+    else
+        echo "⚠️  Warning: OpenAPI generation completed but file not found"
+    fi
+else
+    echo "⚠️  Warning: bin/generate-openapi.php not found, skipping OpenAPI generation"
 fi
 
-# 3b. Set Execute Permission for the CLI Script
-echo "   Setting execute permission for bin/tackle.php..."
-# Grant Read/Execute (755) permission for the CLI user.
-chmod 755 bin/tackle.php
-echo "   Set permissions for bin/tackle.php to 755."
+# --- 3. Set Ownership and Permissions for Data Directory ---
+echo ""
+echo "→ Step 3: Setting ownership and permissions for data directory..."
+chown -R "${CLI_USER}" data/ 2>/dev/null || echo "⚠️  Could not change ownership (may require sudo)"
+chmod -R 775 data/
+echo "✓ Data directory permissions set to 775"
 
-echo ---
-## 4. General Permissions for Source Code
+# --- 4. Set Permissions for Database Files ---
+echo ""
+echo "→ Step 4: Setting permissions for database files..."
+for db_file in "$DB_FILE" "$ADMIN_DB_FILE"; do
+    if [ -f "$db_file" ]; then
+        chmod 664 "$db_file"
+        echo "✓ Set permissions for $db_file to 664"
+    fi
+done
 
-echo -e "\n4. Setting secure general permissions for source code (src/ and config/)..."
+# Set permissions for database directory
+if [ -d "data/sqlite" ]; then
+    chmod 775 data/sqlite
+    echo "✓ Set permissions for data/sqlite/ to 775"
+fi
 
-# Set directories to 755 (rwx for owner, rx for group/other)
-find src/ config/ -type d -exec chmod 755 {} \;
-echo "   Set directories (src/, config/) to 755."
+# --- 5. Set Execute Permissions for Scripts ---
+echo ""
+echo "→ Step 5: Setting execute permissions for scripts..."
+find bin/ -type f -name "*.sh" -exec chmod 755 {} \;
+find bin/ -type f -name "*.php" -exec chmod 755 {} \;
+echo "✓ Script permissions set to 755"
 
-# Set all other source files to 644 (rw for owner, r for group/other)
-find src/ config/ -type f -exec chmod 644 {} \;
-find index.php -type f -exec chmod 644 {} \;
-echo "   Set files to 644."
+# --- 6. Set Permissions for Source Code ---
+echo ""
+echo "→ Step 6: Setting permissions for source code..."
+find src/ config/ -type d -exec chmod 755 {} \; 2>/dev/null
+find src/ config/ -type f -exec chmod 644 {} \; 2>/dev/null
+if [ -f "index.php" ]; then
+    chmod 644 index.php
+fi
+echo "✓ Source code permissions set (directories: 755, files: 644)"
 
-echo -e "\n--- Setup Complete ---"
-echo "The required permissions are set using Owner-Only ownership for stability on Hostinger. Please test your CLI and API now! 🚀"
+# --- 7. Set Permissions for OpenAPI File ---
+echo ""
+echo "→ Step 7: Setting permissions for OpenAPI file..."
+if [ -f "$OPENAPI_FILE" ]; then
+    chmod 644 "$OPENAPI_FILE"
+    echo "✓ OpenAPI file permissions set"
+fi
+
+# --- 8. Create Required Directories ---
+echo ""
+echo "→ Step 8: Creating required directories..."
+mkdir -p data/sqlite data/cache data/logs
+chmod 775 data/sqlite data/cache data/logs 2>/dev/null
+echo "✓ Required directories created"
+
+echo ""
+echo "========================================="
+echo "✓ Deployment Preparation Complete!"
+echo "========================================="
+echo "Next steps:"
+echo "  1. Run migrations: php migrations/001_create_admin_database.php"
+echo "  2. Run migrations: php migrations/002_extend_products_database.php"
+echo "  3. Run migrations: php migrations/003_add_api_keys_and_settings.php"
+echo "  4. Import products: php bin/tackle.php --force"
+echo "  5. Test the API endpoints"
+echo "========================================="

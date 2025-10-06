@@ -6,11 +6,10 @@ use PDO;
 use Salsify\JsonStreamingParser\JsonStreamingParser;
 use PDOStatement; // Added use statement for native PDOStatement
 
-// Set reasonable limits for the CLI script
-ini_set('memory_limit', '512M'); // Set a reasonable memory limit (adjust based on data size)
-// CRITICAL FIX: Increase max_execution_time for large datasets (10,000+ products)
-// Processing 10,000 products can take 10-15 minutes depending on server performance
-ini_set('max_execution_time', 1800); // 30 minutes for large imports (was 300 = 5 minutes)
+// Set unlimited execution time for long-running operations
+set_time_limit(0);
+ini_set('max_execution_time', '0');
+ini_set('memory_limit', '1G'); // Increased memory limit for large datasets
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -224,11 +223,6 @@ class ProductProcessor
 
             // Start processing files
             foreach ($productFiles as $filePath) {
-                // TIMEOUT FIX: Reset execution time limit every 100 files to prevent timeout
-                if ($fileCounter % 100 === 0 && $fileCounter > 0) {
-                    set_time_limit(1800); // Reset to 30 minutes
-                }
-
                 // Read the JSON content
                 $jsonContent = file_get_contents($filePath);
                 $product = json_decode($jsonContent, true);
