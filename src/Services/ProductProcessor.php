@@ -171,12 +171,12 @@ class ProductProcessor
         if ($seconds < 60) {
             return sprintf("%.0fs", $seconds);
         } elseif ($seconds < 3600) {
-            $minutes = floor($seconds / 60);
-            $secs = $seconds % 60;
+            $minutes = (int) floor($seconds / 60);
+            $secs = (int) ($seconds % 60);
             return sprintf("%dm %ds", $minutes, $secs);
         } else {
-            $hours = floor($seconds / 3600);
-            $minutes = floor(($seconds % 3600) / 60);
+            $hours = (int) floor($seconds / 3600);
+            $minutes = (int) floor(($seconds % 3600) / 60);
             return sprintf("%dh %dm", $hours, $minutes);
         }
     }

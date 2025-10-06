@@ -2,6 +2,9 @@
 
 This directory contains all command-line scripts for managing the X-Products API.
 
+> **📌 Deploying on Shared Hosting?**
+> See [SHARED_HOSTING_DEPLOYMENT_GUIDE.md](../SHARED_HOSTING_DEPLOYMENT_GUIDE.md) for Hostinger, cPanel, and other shared hosting environments.
+
 ## Quick Reference
 
 | Script | Purpose | Frequency |
@@ -15,10 +18,68 @@ This directory contains all command-line scripts for managing the X-Products API
 | `analyze-data.sh` | Data analysis | As needed |
 | `generate-openapi.php` | API documentation | Daily |
 | `setup-cron-jobs.sh` | Cron configuration | Once |
+| `diagnose.sh` | Environment diagnostics | As needed |
 
 ---
 
 ## Deployment & Setup
+
+### diagnose.sh
+
+Diagnostic script that checks your environment and identifies potential issues.
+
+```bash
+# Run from project root
+bash bin/diagnose.sh
+```
+
+**What it checks:**
+- ✅ PHP version and extensions
+- ✅ Project structure and required files
+- ✅ Database files and permissions
+- ✅ Write permissions on directories
+- ✅ Composer dependencies
+- ✅ Disk space and process limits
+- ✅ Cron job configuration
+- ✅ Common deployment issues
+
+**When to use:**
+- Before deployment to verify environment
+- When troubleshooting deployment issues
+- After server changes or updates
+- On new shared hosting environments
+
+**Example Output:**
+```
+========================================
+X-Products API - Environment Diagnostics
+========================================
+
+→ System Information
+  User: u800171071
+  Environment: Shared Hosting (detected)
+
+→ PHP Information
+  PHP 8.2.27 (cli) (built: ...) ( NTS )
+  Memory Limit: 1024M
+  OPcache: Enabled
+
+→ PHP Extensions
+  ✓ pdo
+  ✓ pdo_sqlite
+  ✓ json
+  ✓ mbstring
+
+[... continues with detailed checks ...]
+
+→ Common Issues Check
+  ✓ No common issues detected
+
+Recommendations
+1. Setup cron jobs: bash bin/setup-cron-jobs.sh
+```
+
+---
 
 ### prepare.sh
 
@@ -32,11 +93,18 @@ bash bin/prepare.sh
 **What it does:**
 - ✅ Validates project structure
 - ✅ Generates OpenAPI specification
-- ✅ Sets ownership and permissions
+- ✅ Sets ownership and permissions (with shared hosting support)
 - ✅ Creates required directories
 - ✅ Provides deployment checklist
+- ✅ Auto-detects shared hosting environments
 
 **When to use:** Before every deployment
+
+**Shared Hosting Notes:**
+- Automatically detects Hostinger, cPanel, and similar environments
+- Skips operations that require elevated privileges
+- Continues deployment despite permission warnings
+- See [SHARED_HOSTING_DEPLOYMENT_GUIDE.md](../SHARED_HOSTING_DEPLOYMENT_GUIDE.md) for details
 
 ---
 
