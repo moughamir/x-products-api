@@ -1,5 +1,6 @@
 composer.lock
 vendor/
-data/sqlite/products.sqlite
 data/json/products_by_id/*.json
 data/json/*.json
+
+data/sqlite/*.sqlite
