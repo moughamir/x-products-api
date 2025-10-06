@@ -19,6 +19,8 @@ use PDO;
 use Slim\Routing\RouteCollectorProxy;
 use DI\ContainerBuilder;
 use Twig\Loader\FilesystemLoader;
+use Psr\Http\Message\ResponseFactoryInterface;
+use Nyholm\Psr7\Response;
 use function DI\get;
 
 class App
@@ -42,6 +44,15 @@ class App
         $containerBuilder = new ContainerBuilder();
         $containerBuilder->addDefinitions([
             'source_dir' => __DIR__ . '/Controllers',
+
+            // PSR-7 Response Factory
+            ResponseFactoryInterface::class => function() {
+                return new class implements ResponseFactoryInterface {
+                    public function createResponse(int $code = 200, string $reasonPhrase = ''): \Psr\Http\Message\ResponseInterface {
+                        return new Response($code);
+                    }
+                };
+            },
 
             // Products Database (main PDO)
             PDO::class => function() use ($dbConfig) {
@@ -106,9 +117,7 @@ class App
             },
 
             // Admin Middleware
-            AdminAuthMiddleware::class => function(AuthService $authService) {
-                return new AdminAuthMiddleware($authService);
-            },
+            AdminAuthMiddleware::class => \DI\autowire(),
 
             // Admin Controllers
             AuthController::class => function(AuthService $authService, Twig $view) {
