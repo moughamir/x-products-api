@@ -4,3 +4,4 @@ data/json/products_by_id/*.json
 data/json/*.json
 
 data/sqlite/*.sqlite
+*.sqlite-journal

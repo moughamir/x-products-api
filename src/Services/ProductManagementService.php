@@ -19,7 +19,7 @@ class ProductManagementService
     }
 
     /**
-     * Get products with admin-specific data
+     * Get products with admin-specific data (including images)
      */
     public function getProductsForAdmin(int $page = 1, int $limit = 50, array $filters = []): array
     {
@@ -83,7 +83,7 @@ class ProductManagementService
         $orderBy = $filters['order_by'] ?? 'id DESC';
 
         $sql = "SELECT * FROM products WHERE {$whereClause} ORDER BY {$orderBy} LIMIT :limit OFFSET :offset";
-        
+
         $stmt = $this->db->prepare($sql);
         foreach ($params as $key => $value) {
             $stmt->bindValue(':' . $key, $value);
@@ -92,7 +92,42 @@ class ProductManagementService
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Attach primary image to each product
+        foreach ($products as &$product) {
+            $product['primary_image'] = $this->getPrimaryImage($product['id']);
+            $product['image_count'] = $this->getImageCount($product['id']);
+        }
+
+        return $products;
+    }
+
+    /**
+     * Get primary (first) image for a product
+     */
+    private function getPrimaryImage(int $productId): ?array
+    {
+        $stmt = $this->db->prepare("
+            SELECT * FROM product_images
+            WHERE product_id = :product_id
+            ORDER BY position ASC, id ASC
+            LIMIT 1
+        ");
+        $stmt->execute(['product_id' => $productId]);
+        $image = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $image ?: null;
+    }
+
+    /**
+     * Get total image count for a product
+     */
+    private function getImageCount(int $productId): int
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM product_images WHERE product_id = :product_id");
+        $stmt->execute(['product_id' => $productId]);
+        return (int)$stmt->fetchColumn();
     }
 
     /**
@@ -149,7 +184,7 @@ class ProductManagementService
 
         $whereClause = implode(' AND ', $where);
         $sql = "SELECT COUNT(*) FROM products WHERE {$whereClause}";
-        
+
         $stmt = $this->db->prepare($sql);
         foreach ($params as $key => $value) {
             $stmt->bindValue(':' . $key, $value);
@@ -191,7 +226,7 @@ class ProductManagementService
 
         $placeholders = implode(',', array_fill(0, count($productIds), '?'));
         $sql = "UPDATE products SET {$field} = ? WHERE id IN ({$placeholders})";
-        
+
         $params = array_merge([$value], $productIds);
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);

@@ -22,7 +22,10 @@
                 </div>
                 <div class="stat-title">Total Products</div>
                 <div class="stat-value text-primary">{{ stats.total_products|number_format }}</div>
-                <div class="stat-desc">In catalog</div>
+                <div class="stat-desc">
+                    <span class="text-success">{{ stats.in_stock_products|number_format }}</span> in stock,
+                    <span class="text-error">{{ stats.out_of_stock_products|number_format }}</span> out
+                </div>
             </div>
         </div>
 
@@ -35,12 +38,12 @@
                     </svg>
                 </div>
                 <div class="stat-title">Collections</div>
-                <div class="stat-value text-secondary">{{ stats.total_collections }}</div>
-                <div class="stat-desc">Product collections</div>
+                <div class="stat-value text-secondary">{{ stats.total_collections|number_format }}</div>
+                <div class="stat-desc">{{ stats.smart_collections|number_format }} smart collections</div>
             </div>
         </div>
 
-        <!-- Tags -->
+        <!-- Categories & Tags -->
         <div class="stats shadow">
             <div class="stat">
                 <div class="stat-figure text-accent">
@@ -48,9 +51,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                     </svg>
                 </div>
-                <div class="stat-title">Tags</div>
-                <div class="stat-value text-accent">{{ stats.total_tags }}</div>
-                <div class="stat-desc">Unique tags</div>
+                <div class="stat-title">Tags & Categories</div>
+                <div class="stat-value text-accent">{{ stats.total_tags|number_format }}</div>
+                <div class="stat-desc">{{ stats.total_categories|number_format }} categories</div>
             </div>
         </div>
 
@@ -63,8 +66,38 @@
                     </svg>
                 </div>
                 <div class="stat-title">Active Users</div>
-                <div class="stat-value text-info">{{ stats.active_users }}</div>
-                <div class="stat-desc">{{ stats.active_sessions }} active sessions</div>
+                <div class="stat-value text-info">{{ stats.active_users|number_format }}</div>
+                <div class="stat-desc">{{ stats.active_sessions|number_format }} active sessions</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Statistics Row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <!-- Average Price -->
+        <div class="stats shadow">
+            <div class="stat">
+                <div class="stat-title">Average Product Price</div>
+                <div class="stat-value text-sm">${{ stats.avg_product_price|number_format(2) }}</div>
+                <div class="stat-desc">Across all products</div>
+            </div>
+        </div>
+
+        <!-- Product Images -->
+        <div class="stats shadow">
+            <div class="stat">
+                <div class="stat-title">Product Images</div>
+                <div class="stat-value text-sm">{{ stats.total_images|number_format }}</div>
+                <div class="stat-desc">Total images uploaded</div>
+            </div>
+        </div>
+
+        <!-- Today's Activity -->
+        <div class="stats shadow">
+            <div class="stat">
+                <div class="stat-title">Today's Activity</div>
+                <div class="stat-value text-sm">{{ stats.today_activity_count|number_format }}</div>
+                <div class="stat-desc">{{ stats.active_api_keys|number_format }} active API keys</div>
             </div>
         </div>
     </div>
@@ -105,21 +138,32 @@
     <!-- Recent Activity -->
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-            <h2 class="card-title">Recent Activity</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="card-title">Recent Activity</h2>
+                <a href="/cosmos/admin/activity" class="btn btn-sm btn-ghost">View All</a>
+            </div>
             <div class="overflow-x-auto mt-4">
                 <table class="table table-zebra w-full">
                     <thead>
                         <tr>
                             <th>User</th>
                             <th>Action</th>
-                            <th>Resource</th>
+                            <th>Entity</th>
+                            <th>Details</th>
                             <th>Time</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if recent_activity is empty %}
                         <tr>
-                            <td colspan="4" class="text-center text-base-content/60">No recent activity</td>
+                            <td colspan="5" class="text-center py-8 text-base-content/60">
+                                <div class="flex flex-col items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                    <p>No recent activity</p>
+                                </div>
+                            </td>
                         </tr>
                         {% else %}
                         {% for activity in recent_activity %}
@@ -133,14 +177,34 @@
                                     </div>
                                     <div>
                                         <div class="font-bold">{{ activity.full_name|default(activity.username) }}</div>
-                                        <div class="text-sm opacity-50">{{ activity.username }}</div>
+                                        <div class="text-sm opacity-50">@{{ activity.username }}</div>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <span class="badge badge-sm">{{ activity.action }}</span>
+                                {% if activity.action == 'create' %}
+                                <span class="badge badge-success badge-sm">Created</span>
+                                {% elseif activity.action == 'update' %}
+                                <span class="badge badge-info badge-sm">Updated</span>
+                                {% elseif activity.action == 'delete' %}
+                                <span class="badge badge-error badge-sm">Deleted</span>
+                                {% else %}
+                                <span class="badge badge-sm">{{ activity.action|capitalize }}</span>
+                                {% endif %}
                             </td>
-                            <td>{{ activity.resource }}</td>
+                            <td>
+                                <span class="badge badge-outline badge-sm">{{ activity.entity_type|default('Unknown') }}</span>
+                            </td>
+                            <td>
+                                <div class="text-sm">
+                                    {% if activity.entity_id %}
+                                    <span class="font-mono text-xs opacity-70">#{{ activity.entity_id }}</span>
+                                    {% endif %}
+                                    {% if activity.details %}
+                                    <span class="opacity-70">{{ activity.details|slice(0, 50) }}{% if activity.details|length > 50 %}...{% endif %}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
                             <td>
                                 <span class="text-sm opacity-70">{{ activity.created_at }}</span>
                             </td>

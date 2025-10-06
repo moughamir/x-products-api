@@ -19,7 +19,7 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <h3 class="card-title">Basic Information</h3>
-                
+
                 <div class="form-control">
                     <label class="label"><span class="label-text">Title *</span></label>
                     <input type="text" name="title" value="{{ product.title }}" required class="input input-bordered">
@@ -42,7 +42,7 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <h3 class="card-title">Pricing</h3>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-control">
                         <label class="label"><span class="label-text">Price *</span></label>
@@ -62,7 +62,7 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <h3 class="card-title">Organization</h3>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-control">
                         <label class="label"><span class="label-text">Vendor</span></label>
@@ -86,7 +86,7 @@
                     <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-base-300 rounded-lg p-4">
                         {% for collection in collections %}
                         <label class="label cursor-pointer justify-start">
-                            <input type="checkbox" name="collections[]" value="{{ collection.id }}" 
+                            <input type="checkbox" name="collections[]" value="{{ collection.id }}"
                                 {% if collection.id in assigned_collections %}checked{% endif %}
                                 class="checkbox checkbox-sm mr-2">
                             <span class="label-text">{{ collection.title }}</span>
@@ -111,11 +111,56 @@
             </div>
         </div>
 
+        <!-- Product Images -->
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <h3 class="card-title">Product Images</h3>
+
+                {% if product_images is not empty %}
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    {% for image in product_images %}
+                    <div class="relative group">
+                        <div class="aspect-square rounded-lg overflow-hidden border-2 border-base-300">
+                            <img src="{{ image.src }}" alt="Product image {{ loop.index }}" class="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                        <div class="absolute top-2 left-2">
+                            {% if loop.first %}
+                            <span class="badge badge-primary badge-sm">Primary</span>
+                            {% else %}
+                            <span class="badge badge-ghost badge-sm">{{ loop.index }}</span>
+                            {% endif %}
+                        </div>
+                        {% if image.width and image.height %}
+                        <div class="text-xs text-center mt-1 opacity-70">{{ image.width }}×{{ image.height }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="alert alert-info">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>{{ product_images|length }} image(s) found. Image management coming soon.</span>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                        <div class="font-bold">No images available</div>
+                        <div class="text-sm">This product doesn't have any images yet.</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Inventory -->
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <h3 class="card-title">Inventory</h3>
-                
+
                 <div class="form-control">
                     <label class="label cursor-pointer justify-start">
                         <input type="checkbox" name="in_stock" value="1" {% if product.in_stock %}checked{% endif %} class="checkbox mr-2">

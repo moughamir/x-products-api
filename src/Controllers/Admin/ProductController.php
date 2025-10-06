@@ -66,11 +66,11 @@ class ProductController
         // Get filter options
         $collections = Collection::all($this->productsDb, 1, 100);
         $categories = Category::all($this->productsDb);
-        
+
         // Get unique product types and vendors
         $stmt = $this->productsDb->query("SELECT DISTINCT product_type FROM products WHERE product_type IS NOT NULL ORDER BY product_type");
         $productTypes = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
+
         $stmt = $this->productsDb->query("SELECT DISTINCT vendor FROM products WHERE vendor IS NOT NULL ORDER BY vendor");
         $vendors = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
@@ -132,8 +132,8 @@ class ProductController
 
         try {
             // Generate handle if not provided
-            $handle = !empty($data['handle']) 
-                ? $data['handle'] 
+            $handle = !empty($data['handle'])
+                ? $data['handle']
                 : $this->productService->generateUniqueHandle($data['title']);
 
             // Insert product
@@ -223,6 +223,15 @@ class ProductController
             return $response->withHeader('Location', '/cosmos/admin/products')->withStatus(302);
         }
 
+        // Get product images
+        $stmt = $this->productsDb->prepare("
+            SELECT * FROM product_images
+            WHERE product_id = :id
+            ORDER BY position ASC, id ASC
+        ");
+        $stmt->execute(['id' => $productId]);
+        $productImages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
         // Get assigned collections
         $stmt = $this->productsDb->prepare("SELECT collection_id FROM product_collections WHERE product_id = :id");
         $stmt->execute(['id' => $productId]);
@@ -240,6 +249,7 @@ class ProductController
         return $this->view->render($response, 'admin/products/edit.html.twig', [
             'user' => $user,
             'product' => $product,
+            'product_images' => $productImages,
             'collections' => $collections,
             'categories' => $categories,
             'assigned_collections' => $assignedCollections,

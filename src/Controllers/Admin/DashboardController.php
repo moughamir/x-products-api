@@ -54,8 +54,17 @@ class DashboardController
         $stmt = $this->productsDb->query("SELECT COUNT(*) FROM products");
         $stats['total_products'] = $stmt->fetchColumn();
 
+        $stmt = $this->productsDb->query("SELECT COUNT(*) FROM products WHERE in_stock = 1");
+        $stats['in_stock_products'] = $stmt->fetchColumn();
+
+        $stmt = $this->productsDb->query("SELECT COUNT(*) FROM products WHERE in_stock = 0");
+        $stats['out_of_stock_products'] = $stmt->fetchColumn();
+
         $stmt = $this->productsDb->query("SELECT COUNT(*) FROM collections");
         $stats['total_collections'] = $stmt->fetchColumn();
+
+        $stmt = $this->productsDb->query("SELECT COUNT(*) FROM collections WHERE is_smart = 1");
+        $stats['smart_collections'] = $stmt->fetchColumn();
 
         $stmt = $this->productsDb->query("SELECT COUNT(*) FROM tags");
         $stats['total_tags'] = $stmt->fetchColumn();
@@ -63,12 +72,27 @@ class DashboardController
         $stmt = $this->productsDb->query("SELECT COUNT(*) FROM categories");
         $stats['total_categories'] = $stmt->fetchColumn();
 
+        // Calculate average product price
+        $stmt = $this->productsDb->query("SELECT AVG(price) FROM products WHERE price > 0");
+        $stats['avg_product_price'] = $stmt->fetchColumn() ?: 0;
+
+        // Get total product images count
+        $stmt = $this->productsDb->query("SELECT COUNT(*) FROM product_images");
+        $stats['total_images'] = $stmt->fetchColumn();
+
         // Admin statistics
         $stmt = $this->adminDb->query("SELECT COUNT(*) FROM admin_users WHERE is_active = 1");
         $stats['active_users'] = $stmt->fetchColumn();
 
         $stmt = $this->adminDb->query("SELECT COUNT(*) FROM admin_sessions WHERE expires_at > CURRENT_TIMESTAMP");
         $stats['active_sessions'] = $stmt->fetchColumn();
+
+        $stmt = $this->adminDb->query("SELECT COUNT(*) FROM api_keys WHERE (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)");
+        $stats['active_api_keys'] = $stmt->fetchColumn();
+
+        // Get total activity count for today
+        $stmt = $this->adminDb->query("SELECT COUNT(*) FROM admin_activity_log WHERE DATE(created_at) = DATE('now')");
+        $stats['today_activity_count'] = $stmt->fetchColumn();
 
         return $stats;
     }
