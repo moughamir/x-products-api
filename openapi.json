@@ -26,7 +26,7 @@
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "default": "1"
+                            "default": 1
                         }
                     },
                     {
@@ -35,8 +35,8 @@
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "default": "50",
-                            "maximum": "100"
+                            "default": 50,
+                            "maximum": 100
                         }
                     },
                     {
@@ -154,7 +154,7 @@
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "default": "1"
+                            "default": 1
                         }
                     },
                     {
@@ -163,8 +163,8 @@
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "default": "50",
-                            "maximum": "100"
+                            "default": 50,
+                            "maximum": 100
                         }
                     },
                     {
@@ -231,7 +231,7 @@
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "default": "1"
+                            "default": 1
                         }
                     },
                     {
@@ -240,8 +240,8 @@
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "default": "50",
-                            "maximum": "100"
+                            "default": 50,
+                            "maximum": 100
                         }
                     },
                     {
@@ -285,16 +285,16 @@
                 }
             }
         },
-        "/cdn/{path:.*}": {
+        "/cdn/{path}": {
             "get": {
                 "summary": "Reverse proxy for external images (CDN).",
-                "description": "Streams an image from the configured external CDN (`https://cdn.shopify.com`) via this domain.",
-                "operationId": "7c30a51afc444fa63320867fa4719525",
+                "description": "Streams an image from the configured external CDN (`https://cdn.shopify.com`) via this domain. The `path` parameter accepts any path string including slashes (e.g., `s/files/1/0000/0000/products/image.jpg`).",
+                "operationId": "24af4d477e38177a28c26899339fabc1",
                 "parameters": [
                     {
                         "name": "path",
                         "in": "path",
-                        "description": "The path to the image on the external CDN.",
+                        "description": "The path to the image on the external CDN. Can include slashes and subdirectories.",
                         "required": true,
                         "schema": {
                             "type": "string",
