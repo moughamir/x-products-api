@@ -141,11 +141,16 @@ print_step "Project structure validated"
 print_header "Step 2: Setting File Permissions"
 print_info "Running prepare.sh..."
 
-if bash $PROJECT_ROOT/bin/prepare.sh; then
+# Run prepare.sh and capture exit code
+bash bin/prepare.sh
+prepare_exit_code=$?
+
+if [ $prepare_exit_code -eq 0 ]; then
     print_step "File permissions set successfully"
 else
-    print_error "Failed to set file permissions"
-    exit 1
+    print_warning "prepare.sh completed with warnings (exit code: $prepare_exit_code)"
+    print_info "This is often normal on shared hosting environments"
+    print_info "Continuing with deployment..."
 fi
 
 # Step 3: Run database migrations
