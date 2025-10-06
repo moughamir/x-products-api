@@ -7,6 +7,22 @@ set -e
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CRON_FILE="$PROJECT_ROOT/tmp/x-products-cron.txt"
 
+# Resolve crontab binary (handle shared hosting without CLI crontab)
+CRONTAB_BIN="$(type -P crontab 2>/dev/null || true)"
+if [ -z "$CRONTAB_BIN" ]; then
+    for p in /usr/bin/crontab /bin/crontab /usr/sbin/crontab; do
+        if [ -x "$p" ]; then
+            CRONTAB_BIN="$p"
+            break
+        fi
+    done
+fi
+
+HAS_CRONTAB=false
+if [ -n "$CRONTAB_BIN" ] && [ -x "$CRONTAB_BIN" ]; then
+    HAS_CRONTAB=true
+fi
+
 echo "========================================="
 echo "X-Products API - Cron Jobs Setup"
 echo "========================================="
@@ -79,22 +95,36 @@ echo "========================================="
 echo "Installation Options:"
 echo "========================================="
 echo ""
-echo "Option 1: Install for current user"
-echo "  crontab $CRON_FILE"
-echo ""
-echo "Option 2: Append to existing crontab"
-echo "  crontab -l > $PROJECT_ROOT/tmp/current-cron.txt"
-echo "  cat $CRON_FILE >> $PROJECT_ROOT/tmp/current-cron.txt"
-echo "  crontab $PROJECT_ROOT/tmp/current-cron.txt"
-echo ""
-echo "Option 3: Manual installation"
-echo "  crontab -e"
-echo "  # Then copy the contents from: $CRON_FILE"
+if [ "$HAS_CRONTAB" = true ]; then
+    echo "Option 1: Install for current user (auto)"
+    echo "  $CRONTAB_BIN $CRON_FILE"
+    echo ""
+    echo "Option 2: Append to existing crontab (auto)"
+    echo "  $CRONTAB_BIN -l > $PROJECT_ROOT/tmp/current-cron.txt"
+    echo "  cat $CRON_FILE >> $PROJECT_ROOT/tmp/current-cron.txt"
+    echo "  $CRONTAB_BIN $PROJECT_ROOT/tmp/current-cron.txt"
+    echo ""
+    echo "Option 3: Manual installation (editor)"
+    echo "  $CRONTAB_BIN -e"
+    echo "  # Then copy the contents from: $CRON_FILE"
+else
+    echo "CLI crontab is not available on this environment."
+    echo "Use your hosting control panel (e.g., Hostinger hPanel  Advanced  Cron Jobs)"
+    echo "and copy the entries from: $CRON_FILE"
+    echo ""
+    echo "Tip: Create each job with the schedules shown above."
+fi
+
 echo ""
 echo "========================================="
 echo "Verify Installation:"
 echo "========================================="
-echo "  crontab -l"
+if [ "$HAS_CRONTAB" = true ]; then
+    echo "  $CRONTAB_BIN -l"
+else
+    echo "  In hPanel: Advanced  Cron Jobs  View configured jobs"
+fi
+
 echo ""
 echo "========================================="
 echo "Monitor Logs:"
@@ -102,31 +132,37 @@ echo "========================================="
 echo "  tail -f $PROJECT_ROOT/logs/cron.log"
 echo ""
 
-# Ask if user wants to install now
-read -p "Install cron jobs now? (yes/no): " -r
-echo
-if [[ $REPLY =~ ^[Yy]es$ ]]; then
-    # Backup existing crontab
-    if crontab -l > /dev/null 2>&1; then
-        echo "→ Backing up existing crontab..."
-        crontab -l > "$PROJECT_ROOT/logs/crontab-backup-$(date +%Y%m%d-%H%M%S).txt"
+# Install (auto) only when CLI crontab is available
+if [ "$HAS_CRONTAB" = true ]; then
+    read -p "Install cron jobs now? (yes/no): " -r
+    echo
+    if [[ $REPLY =~ ^[Yy]es$ ]]; then
+        # Backup existing crontab
+        if "$CRONTAB_BIN" -l > /dev/null 2>&1; then
+            echo "→ Backing up existing crontab..."
+            "$CRONTAB_BIN" -l > "$PROJECT_ROOT/logs/crontab-backup-$(date +%Y%m%d-%H%M%S).txt"
 
-        # Append new jobs
-        echo "→ Appending new cron jobs..."
-        (crontab -l 2>/dev/null; cat "$CRON_FILE") | crontab -
+            # Append new jobs
+            echo "→ Appending new cron jobs..."
+            ("$CRONTAB_BIN" -l 2>/dev/null; cat "$CRON_FILE") | "$CRONTAB_BIN" -
+        else
+            # No existing crontab, install fresh
+            echo "→ Installing cron jobs..."
+            "$CRONTAB_BIN" "$CRON_FILE"
+        fi
+
+        echo "✓ Cron jobs installed successfully!"
+        echo ""
+        echo "Current crontab:"
+        "$CRONTAB_BIN" -l
     else
-        # No existing crontab, install fresh
-        echo "→ Installing cron jobs..."
-        crontab "$CRON_FILE"
+        echo "Cron jobs not installed."
+        echo "Configuration saved to: $CRON_FILE"
     fi
-
-    echo "✓ Cron jobs installed successfully!"
-    echo ""
-    echo "Current crontab:"
-    crontab -l
 else
-    echo "Cron jobs not installed."
-    echo "Configuration saved to: $CRON_FILE"
+    echo "CLI crontab is not available. Skipping auto-install."
+    echo "Use your hosting control panel (hPanel → Advanced → Cron Jobs) to add entries from:"
+    echo "  $CRON_FILE"
 fi
 
 echo ""
