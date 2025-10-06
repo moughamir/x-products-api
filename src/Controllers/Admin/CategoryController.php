@@ -56,6 +56,13 @@ class CategoryController
     public function store(Request $request, Response $response): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $data = $request->getParsedBody();
 
         if (empty($data['name'])) {
@@ -104,6 +111,13 @@ class CategoryController
     public function update(Request $request, Response $response, array $args): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $categoryId = (int)$args['id'];
         $data = $request->getParsedBody();
 
@@ -137,6 +151,13 @@ class CategoryController
     public function delete(Request $request, Response $response, array $args): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $categoryId = (int)$args['id'];
 
         $category = Category::find($this->db, $categoryId);

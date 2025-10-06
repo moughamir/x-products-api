@@ -114,6 +114,13 @@ class ProductController
     public function store(Request $request, Response $response): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $data = $request->getParsedBody();
 
         // Validation
@@ -263,6 +270,13 @@ class ProductController
     public function update(Request $request, Response $response, array $args): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $productId = (int)$args['id'];
         $data = $request->getParsedBody();
 
@@ -362,6 +376,13 @@ class ProductController
     public function delete(Request $request, Response $response, array $args): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $productId = (int)$args['id'];
 
         try {
@@ -396,6 +417,13 @@ class ProductController
     public function bulkDelete(Request $request, Response $response): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $data = $request->getParsedBody();
         $productIds = $data['product_ids'] ?? [];
 

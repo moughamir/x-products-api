@@ -63,6 +63,13 @@ class SettingsController
     public function update(Request $request, Response $response): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $data = $request->getParsedBody();
 
         try {

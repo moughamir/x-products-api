@@ -91,6 +91,13 @@ class CollectionController
     public function store(Request $request, Response $response): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $data = $request->getParsedBody();
 
         if (empty($data['title'])) {
@@ -113,12 +120,12 @@ class CollectionController
                     'type' => $data['rule_type'],
                     'value' => $data['rule_value'] ?? null,
                 ];
-                
+
                 if ($data['rule_type'] === 'price_range') {
                     $rules['min_price'] = $data['min_price'] ?? null;
                     $rules['max_price'] = $data['max_price'] ?? null;
                 }
-                
+
                 $collection->rules = json_encode($rules);
             }
 
@@ -176,6 +183,13 @@ class CollectionController
     public function update(Request $request, Response $response, array $args): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $collectionId = (int)$args['id'];
         $data = $request->getParsedBody();
 
@@ -203,12 +217,12 @@ class CollectionController
                     'type' => $data['rule_type'],
                     'value' => $data['rule_value'] ?? null,
                 ];
-                
+
                 if ($data['rule_type'] === 'price_range') {
                     $rules['min_price'] = $data['min_price'] ?? null;
                     $rules['max_price'] = $data['max_price'] ?? null;
                 }
-                
+
                 $collection->rules = json_encode($rules);
             }
 
@@ -240,6 +254,13 @@ class CollectionController
     public function delete(Request $request, Response $response, array $args): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $collectionId = (int)$args['id'];
 
         $collection = Collection::find($this->db, $collectionId);
@@ -273,6 +294,13 @@ class CollectionController
     public function sync(Request $request, Response $response, array $args): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $collectionId = (int)$args['id'];
 
         $collection = Collection::find($this->db, $collectionId);

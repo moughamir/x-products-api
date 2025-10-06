@@ -62,6 +62,13 @@ class TagController
     public function store(Request $request, Response $response): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $data = $request->getParsedBody();
 
         if (empty($data['name'])) {
@@ -100,6 +107,13 @@ class TagController
     public function update(Request $request, Response $response, array $args): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $tagId = (int)$args['id'];
         $data = $request->getParsedBody();
 
@@ -131,6 +145,13 @@ class TagController
     public function delete(Request $request, Response $response, array $args): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $tagId = (int)$args['id'];
 
         $tag = Tag::find($this->db, $tagId);
@@ -154,6 +175,13 @@ class TagController
     public function bulkDelete(Request $request, Response $response): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
+
         $data = $request->getParsedBody();
         $tagIds = array_map('intval', explode(',', $data['tag_ids'] ?? ''));
 
@@ -176,6 +204,12 @@ class TagController
     public function cleanupUnused(Request $request, Response $response): Response
     {
         $user = $this->authService->getUserFromSession();
+
+        // Check if user is authenticated
+        if (!$user) {
+            $_SESSION['error'] = 'Session expired. Please login again.';
+            return $response->withHeader('Location', '/cosmos/admin/login')->withStatus(302);
+        }
 
         try {
             $count = $this->tagService->deleteUnusedTags();
