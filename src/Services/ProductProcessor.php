@@ -78,11 +78,13 @@ class ProductProcessor
                 id INTEGER,
                 product_id INTEGER,
                 position INTEGER,
+                alt TEXT,
                 src TEXT,
                 width INTEGER,
                 height INTEGER,
                 created_at TEXT,
                 updated_at TEXT,
+                variant_ids TEXT,
                 PRIMARY KEY (id, product_id),
                 FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
             );
@@ -164,9 +166,9 @@ class ProductProcessor
     {
         return "
             INSERT INTO product_images (
-                id, product_id, position, src, width, height, created_at, updated_at
+                id, product_id, position, alt, src, width, height, created_at, updated_at, variant_ids
             ) VALUES (
-                :id, :product_id, :position, :src, :width, :height, :created_at, :updated_at
+                :id, :product_id, :position, :alt, :src, :width, :height, :created_at, :updated_at, :variant_ids
             )
         ";
     }
@@ -312,7 +314,7 @@ class ProductProcessor
     // Simple mock for domain extraction based on file name pattern
     private function extractDomainData(array $product): array
     {
-        return ['domain' => 'default-store.com'];
+        return ['domain' => 'moritotabi.com'];
     }
 
     private function applyPricingLogic(): void
@@ -341,11 +343,39 @@ class ProductProcessor
             $stmt->bindValue(':id', $image['id'], PDO::PARAM_INT);
             $stmt->bindValue(':product_id', $productId, PDO::PARAM_INT);
             $stmt->bindValue(':position', $image['position'] ?? 1, PDO::PARAM_INT);
+
+            // Handle alt text
+            if (isset($image['alt']) && $image['alt'] !== null) {
+                $stmt->bindValue(':alt', $image['alt'], PDO::PARAM_STR);
+            } else {
+                $stmt->bindValue(':alt', null, PDO::PARAM_NULL);
+            }
+
             $stmt->bindValue(':src', $image['src'], PDO::PARAM_STR);
-            $stmt->bindValue(':width', $image['width'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(':height', $image['height'] ?? null, PDO::PARAM_INT);
+
+            // Handle width and height
+            if (isset($image['width']) && $image['width'] !== null) {
+                $stmt->bindValue(':width', $image['width'], PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue(':width', null, PDO::PARAM_NULL);
+            }
+
+            if (isset($image['height']) && $image['height'] !== null) {
+                $stmt->bindValue(':height', $image['height'], PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue(':height', null, PDO::PARAM_NULL);
+            }
+
             $stmt->bindValue(':created_at', $image['created_at'] ?? date('Y-m-d H:i:s'), PDO::PARAM_STR);
             $stmt->bindValue(':updated_at', $image['updated_at'] ?? date('Y-m-d H:i:s'), PDO::PARAM_STR);
+
+            // Handle variant_ids - store as JSON array
+            if (isset($image['variant_ids']) && is_array($image['variant_ids']) && !empty($image['variant_ids'])) {
+                $stmt->bindValue(':variant_ids', json_encode($image['variant_ids'], JSON_UNESCAPED_UNICODE), PDO::PARAM_STR);
+            } else {
+                $stmt->bindValue(':variant_ids', null, PDO::PARAM_NULL);
+            }
+
             $stmt->execute();
         }
     }

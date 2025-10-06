@@ -308,8 +308,108 @@ class ApiController
 
         foreach ($products as $product) {
             $product->images = $imagesByProduct[$product->id] ?? [];
+
+            // Decode and attach variants
+            $this->attachVariantsToProduct($product);
+
+            // Decode and attach options
+            $this->attachOptionsToProduct($product);
         }
 
         return $products;
+    }
+
+    /**
+     * Decode variants_json and attach to product with proper formatting
+     */
+    private function attachVariantsToProduct(\App\Models\Product $product): void
+    {
+        if (empty($product->variants_json)) {
+            $product->variants = [];
+            return;
+        }
+
+        $variants = json_decode($product->variants_json, true);
+        if (!is_array($variants)) {
+            $product->variants = [];
+            return;
+        }
+
+        // Format each variant according to the API specification
+        $product->variants = array_map(function($variant) use ($product) {
+            // Format featured_image if present
+            $featuredImage = null;
+            if (isset($variant['featured_image']) && is_array($variant['featured_image'])) {
+                $img = $variant['featured_image'];
+                $featuredImage = [
+                    'id' => (string)($img['id'] ?? ''),
+                    'product_id' => (string)($img['product_id'] ?? $product->id),
+                    'position' => (int)($img['position'] ?? 1),
+                    'created_at' => $img['created_at'] ?? '',
+                    'updated_at' => $img['updated_at'] ?? '',
+                    'alt' => $img['alt'] ?? null,
+                    'width' => isset($img['width']) ? (int)$img['width'] : null,
+                    'height' => isset($img['height']) ? (int)$img['height'] : null,
+                    'src' => $img['src'] ?? '',
+                    'variant_ids' => isset($img['variant_ids']) && is_array($img['variant_ids'])
+                        ? array_map('strval', $img['variant_ids'])
+                        : []
+                ];
+            }
+
+            return [
+                'id' => (string)($variant['id'] ?? ''),
+                'product_id' => (string)$product->id,
+                'title' => $variant['title'] ?? '',
+                'option1' => $variant['option1'] ?? null,
+                'option2' => $variant['option2'] ?? null,
+                'option3' => $variant['option3'] ?? null,
+                'sku' => $variant['sku'] ?? null,
+                'requires_shipping' => (bool)($variant['requires_shipping'] ?? true),
+                'taxable' => (bool)($variant['taxable'] ?? true),
+                'featured_image' => $featuredImage,
+                'available' => (bool)($variant['available'] ?? false),
+                'price' => (float)($variant['price'] ?? 0),
+                'grams' => (int)($variant['grams'] ?? 0),
+                'compare_at_price' => isset($variant['compare_at_price']) && $variant['compare_at_price'] !== null
+                    ? (float)$variant['compare_at_price']
+                    : null,
+                'position' => (int)($variant['position'] ?? 1),
+                'created_at' => $variant['created_at'] ?? '',
+                'updated_at' => $variant['updated_at'] ?? ''
+            ];
+        }, $variants);
+    }
+
+    /**
+     * Decode options_json and attach to product with proper formatting
+     */
+    private function attachOptionsToProduct(\App\Models\Product $product): void
+    {
+        if (empty($product->options_json)) {
+            $product->options = [];
+            return;
+        }
+
+        $options = json_decode($product->options_json, true);
+        if (!is_array($options)) {
+            $product->options = [];
+            return;
+        }
+
+        // Format each option according to the API specification
+        $product->options = array_map(function($option, $index) use ($product) {
+            // Generate a unique ID if not present: product_id + position
+            $position = (int)($option['position'] ?? $index + 1);
+            $optionId = isset($option['id']) ? (string)$option['id'] : (string)($product->id . $position);
+
+            return [
+                'id' => $optionId,
+                'product_id' => (string)$product->id,
+                'name' => $option['name'] ?? '',
+                'position' => $position,
+                'values' => is_array($option['values'] ?? null) ? $option['values'] : []
+            ];
+        }, $options, array_keys($options));
     }
 }

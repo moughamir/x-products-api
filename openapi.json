@@ -372,75 +372,61 @@
             },
             "Product": {
                 "title": "Product",
+                "description": "Product object matching the ApiProduct TypeScript interface",
                 "properties": {
                     "id": {
+                        "description": "Product ID as string",
                         "type": "string",
-                        "example": "12345"
+                        "example": "1059061125"
                     },
                     "title": {
                         "type": "string",
-                        "example": "Example Product"
+                        "example": "Task Floor Lamp"
                     },
                     "handle": {
                         "type": "string",
-                        "example": "example-product"
+                        "example": "task-floor-lamp"
                     },
                     "body_html": {
                         "type": "string",
-                        "example": "<div>A full description.</div>"
-                    },
-                    "vendor": {
-                        "type": "string",
-                        "example": "Vendor Co."
-                    },
-                    "product_type": {
-                        "type": "string",
-                        "example": "T-Shirt"
-                    },
-                    "tags": {
-                        "type": "string",
-                        "example": "tag1,tag2"
+                        "example": "<p>Product description with HTML</p>"
                     },
                     "price": {
+                        "description": "Minimum variant price",
                         "type": "number",
                         "format": "float",
-                        "example": 19.99
+                        "example": 629.4
                     },
                     "compare_at_price": {
                         "type": "number",
                         "format": "float",
-                        "example": 25,
+                        "example": null,
                         "nullable": true
                     },
-                    "in_stock": {
-                        "type": "boolean",
-                        "example": true
+                    "images": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Image"
+                        }
                     },
-                    "rating": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 4.5,
-                        "nullable": true
-                    },
-                    "review_count": {
-                        "type": "integer",
-                        "example": 42,
-                        "nullable": true
-                    },
-                    "quantity": {
-                        "type": "integer",
-                        "example": 10,
-                        "nullable": true
-                    },
-                    "created_at": {
+                    "product_type": {
                         "type": "string",
-                        "format": "date-time",
-                        "nullable": true
+                        "example": "Lighting/Lamps/Floor Lamps"
                     },
-                    "updated_at": {
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "Brand: Original BTC",
+                            "Collection: Task",
+                            "Color: Black"
+                        ]
+                    },
+                    "vendor": {
                         "type": "string",
-                        "format": "date-time",
-                        "nullable": true
+                        "example": "MyStore"
                     },
                     "variants": {
                         "type": "array",
@@ -454,47 +440,55 @@
                             "$ref": "#/components/schemas/ProductOption"
                         }
                     },
-                    "images": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/Image"
-                        }
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2015-06-15T23:22:45-07:00"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-09-25T10:06:55-07:00"
                     }
                 },
                 "type": "object"
             },
             "ProductVariant": {
                 "title": "ProductVariant",
+                "description": "Product variant matching the ApiProductVariant TypeScript interface",
                 "properties": {
                     "id": {
+                        "description": "Variant ID as string",
                         "type": "string",
-                        "example": "98765"
+                        "example": "3290425605"
                     },
                     "product_id": {
+                        "description": "Product ID as string",
                         "type": "string",
-                        "example": "12345"
+                        "example": "1059061125"
                     },
                     "title": {
                         "type": "string",
-                        "example": "Small / Blue"
+                        "example": "Black"
                     },
                     "option1": {
                         "type": "string",
-                        "example": "Small",
+                        "example": "Black",
                         "nullable": true
                     },
                     "option2": {
                         "type": "string",
-                        "example": "Blue",
+                        "example": null,
                         "nullable": true
                     },
                     "option3": {
                         "type": "string",
+                        "example": null,
                         "nullable": true
                     },
                     "sku": {
                         "type": "string",
-                        "example": "PROD-SM-BLU",
+                        "example": "SSBP-54-139",
                         "nullable": true
                     },
                     "requires_shipping": {
@@ -506,9 +500,13 @@
                         "example": true
                     },
                     "featured_image": {
-                        "type": "string",
-                        "example": "http://example.com/variant-image.jpg",
-                        "nullable": true
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/Image"
+                            }
+                        ],
+                        "nullable": true,
+                        "description": "Featured image object (not URL)"
                     },
                     "available": {
                         "type": "boolean",
@@ -517,16 +515,16 @@
                     "price": {
                         "type": "number",
                         "format": "float",
-                        "example": 19.99
+                        "example": 959.4
                     },
                     "grams": {
                         "type": "integer",
-                        "example": 200
+                        "example": 5488
                     },
                     "compare_at_price": {
                         "type": "number",
                         "format": "float",
-                        "example": 25,
+                        "example": null,
                         "nullable": true
                     },
                     "position": {
@@ -536,12 +534,12 @@
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
-                        "nullable": true
+                        "example": "2015-06-15T23:22:45-07:00"
                     },
                     "updated_at": {
                         "type": "string",
                         "format": "date-time",
-                        "nullable": true
+                        "example": "2025-09-25T10:06:55-07:00"
                     }
                 },
                 "type": "object"
