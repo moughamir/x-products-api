@@ -1,0 +1,132 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}Create User{% endblock %}
+{% block page_title %}Create New User{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold">Create New User</h1>
+            <p class="text-base-content/60 mt-1">Add a new admin user to the system</p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <form method="POST" action="/cosmos/admin/users">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                    <!-- Username -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Username <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" name="username" value="{{ app.session.get('old').username|default('') }}" 
+                               class="input input-bordered {% if app.session.get('errors').username %}input-error{% endif %}" 
+                               required>
+                        {% if app.session.get('errors').username %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ app.session.get('errors').username }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-control mt-4">
+                        <label class="label">
+                            <span class="label-text">Email <span class="text-error">*</span></span>
+                        </label>
+                        <input type="email" name="email" value="{{ app.session.get('old').email|default('') }}" 
+                               class="input input-bordered {% if app.session.get('errors').email %}input-error{% endif %}" 
+                               required>
+                        {% if app.session.get('errors').email %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ app.session.get('errors').email }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Full Name -->
+                    <div class="form-control mt-4">
+                        <label class="label">
+                            <span class="label-text">Full Name <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" name="full_name" value="{{ app.session.get('old').full_name|default('') }}" 
+                               class="input input-bordered {% if app.session.get('errors').full_name %}input-error{% endif %}" 
+                               required>
+                        {% if app.session.get('errors').full_name %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ app.session.get('errors').full_name }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-control mt-4">
+                        <label class="label">
+                            <span class="label-text">Password <span class="text-error">*</span></span>
+                        </label>
+                        <input type="password" name="password" 
+                               class="input input-bordered {% if app.session.get('errors').password %}input-error{% endif %}" 
+                               required>
+                        <label class="label">
+                            <span class="label-text-alt">Minimum 8 characters</span>
+                        </label>
+                        {% if app.session.get('errors').password %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ app.session.get('errors').password }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Role -->
+                    <div class="form-control mt-4">
+                        <label class="label">
+                            <span class="label-text">Role <span class="text-error">*</span></span>
+                        </label>
+                        <select name="role_id" class="select select-bordered {% if app.session.get('errors').role_id %}select-error{% endif %}" required>
+                            <option value="">Select a role...</option>
+                            {% for role in roles %}
+                            <option value="{{ role.id }}" {% if app.session.get('old').role_id == role.id %}selected{% endif %}>
+                                {{ role.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if app.session.get('errors').role_id %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ app.session.get('errors').role_id }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Active Status -->
+                    <div class="form-control mt-4">
+                        <label class="label cursor-pointer justify-start gap-4">
+                            <input type="checkbox" name="is_active" value="1" class="checkbox" 
+                                   {% if app.session.get('old').is_active|default(true) %}checked{% endif %}>
+                            <span class="label-text">Active (user can log in)</span>
+                        </label>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="card-actions justify-end mt-6">
+                        <a href="/cosmos/admin/users" class="btn btn-ghost">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Create User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% do app.session.remove('errors') %}
+{% do app.session.remove('old') %}
+{% endblock %}
+

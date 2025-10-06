@@ -93,12 +93,13 @@ try {
     echo "→ Creating admin_sessions table...\n";
     $db->exec("
         CREATE TABLE IF NOT EXISTS admin_sessions (
-            id VARCHAR(64) PRIMARY KEY,
+            session_id VARCHAR(64) PRIMARY KEY,
             user_id INTEGER NOT NULL,
             ip_address VARCHAR(45),
             user_agent TEXT,
-            last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_activity_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             expires_at DATETIME NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE CASCADE
         )
     ");
@@ -110,10 +111,10 @@ try {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
             action VARCHAR(100) NOT NULL,
-            entity_type VARCHAR(50),
-            entity_id INTEGER,
+            resource VARCHAR(100),
             details TEXT,
             ip_address VARCHAR(45),
+            user_agent TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE SET NULL
         )

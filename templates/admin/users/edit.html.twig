@@ -1,0 +1,147 @@
+{% extends 'admin/layout/base.html.twig' %}
+
+{% block title %}Edit User{% endblock %}
+{% block page_title %}Edit User{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold">Edit User: {{ editUser.username }}</h1>
+            <p class="text-base-content/60 mt-1">Update user information and permissions</p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <form method="POST" action="/cosmos/admin/users/{{ editUser.id }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="username" value="{{ editUser.username }}">
+
+                    <!-- Username (Read-only) -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Username</span>
+                        </label>
+                        <input type="text" value="{{ editUser.username }}" class="input input-bordered" disabled>
+                        <label class="label">
+                            <span class="label-text-alt">Username cannot be changed</span>
+                        </label>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-control mt-4">
+                        <label class="label">
+                            <span class="label-text">Email <span class="text-error">*</span></span>
+                        </label>
+                        <input type="email" name="email" value="{{ app.session.get('old').email|default(editUser.email) }}" 
+                               class="input input-bordered {% if app.session.get('errors').email %}input-error{% endif %}" 
+                               required>
+                        {% if app.session.get('errors').email %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ app.session.get('errors').email }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Full Name -->
+                    <div class="form-control mt-4">
+                        <label class="label">
+                            <span class="label-text">Full Name <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" name="full_name" value="{{ app.session.get('old').full_name|default(editUser.full_name) }}" 
+                               class="input input-bordered {% if app.session.get('errors').full_name %}input-error{% endif %}" 
+                               required>
+                        {% if app.session.get('errors').full_name %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ app.session.get('errors').full_name }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-control mt-4">
+                        <label class="label">
+                            <span class="label-text">New Password</span>
+                        </label>
+                        <input type="password" name="password" 
+                               class="input input-bordered {% if app.session.get('errors').password %}input-error{% endif %}">
+                        <label class="label">
+                            <span class="label-text-alt">Leave blank to keep current password</span>
+                        </label>
+                        {% if app.session.get('errors').password %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ app.session.get('errors').password }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Role -->
+                    <div class="form-control mt-4">
+                        <label class="label">
+                            <span class="label-text">Role <span class="text-error">*</span></span>
+                        </label>
+                        <select name="role_id" class="select select-bordered {% if app.session.get('errors').role_id %}select-error{% endif %}" required>
+                            {% for role in roles %}
+                            <option value="{{ role.id }}" 
+                                    {% if app.session.get('old').role_id == role.id or (not app.session.get('old') and editUser.role_id == role.id) %}selected{% endif %}>
+                                {{ role.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if app.session.get('errors').role_id %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ app.session.get('errors').role_id }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Active Status -->
+                    <div class="form-control mt-4">
+                        <label class="label cursor-pointer justify-start gap-4">
+                            <input type="checkbox" name="is_active" value="1" class="checkbox" 
+                                   {% if app.session.get('old').is_active|default(editUser.is_active) %}checked{% endif %}>
+                            <span class="label-text">Active (user can log in)</span>
+                        </label>
+                    </div>
+
+                    <!-- User Info -->
+                    <div class="divider"></div>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-base-content/60">Created:</span>
+                            <span class="font-medium">{{ editUser.created_at|date('Y-m-d H:i') }}</span>
+                        </div>
+                        <div>
+                            <span class="text-base-content/60">Last Login:</span>
+                            <span class="font-medium">
+                                {% if editUser.last_login_at %}
+                                {{ editUser.last_login_at|date('Y-m-d H:i') }}
+                                {% else %}
+                                Never
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="card-actions justify-end mt-6">
+                        <a href="/cosmos/admin/users" class="btn btn-ghost">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Update User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% do app.session.remove('errors') %}
+{% do app.session.remove('old') %}
+{% endblock %}
+

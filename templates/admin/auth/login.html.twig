@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Cosmos Admin</title>
+    
+    <!-- Tailwind CSS + DaisyUI from CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" />
+    
+    <!-- Alpine.js for simple interactions -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+</head>
+<body class="bg-base-200">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="card w-full max-w-md bg-base-100 shadow-xl">
+            <div class="card-body">
+                <!-- Logo/Header -->
+                <div class="text-center mb-6">
+                    <h1 class="text-3xl font-bold text-primary">Cosmos Admin</h1>
+                    <p class="text-base-content/60 mt-2">Sign in to your account</p>
+                </div>
+
+                <!-- Error Message -->
+                {% if error %}
+                <div class="alert alert-error mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{{ error }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Login Form -->
+                <form method="POST" action="/cosmos/admin/login" x-data="{ loading: false }" @submit="loading = true">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    
+                    <!-- Username Field -->
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text">Username</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            name="username" 
+                            placeholder="Enter your username" 
+                            class="input input-bordered w-full" 
+                            required 
+                            autofocus
+                            autocomplete="username"
+                        />
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="form-control mb-6">
+                        <label class="label">
+                            <span class="label-text">Password</span>
+                        </label>
+                        <input 
+                            type="password" 
+                            name="password" 
+                            placeholder="Enter your password" 
+                            class="input input-bordered w-full" 
+                            required
+                            autocomplete="current-password"
+                        />
+                        <label class="label">
+                            <a href="#" class="label-text-alt link link-hover">Forgot password?</a>
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="form-control">
+                        <button 
+                            type="submit" 
+                            class="btn btn-primary w-full"
+                            :class="{ 'loading': loading }"
+                            :disabled="loading"
+                        >
+                            <span x-show="!loading">Sign In</span>
+                            <span x-show="loading">Signing in...</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Footer -->
+                <div class="divider"></div>
+                <div class="text-center text-sm text-base-content/60">
+                    <p>Default credentials: <code class="bg-base-200 px-2 py-1 rounded">admin / admin123</code></p>
+                    <p class="mt-2 text-xs text-warning">⚠️ Change password after first login!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Version Info -->
+    <div class="fixed bottom-4 right-4 text-xs text-base-content/40">
+        Cosmos Admin v1.0.0
+    </div>
+</body>
+</html>
+

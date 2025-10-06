@@ -8,7 +8,9 @@ use PDOStatement; // Added use statement for native PDOStatement
 
 // Set reasonable limits for the CLI script
 ini_set('memory_limit', '512M'); // Set a reasonable memory limit (adjust based on data size)
-ini_set('max_execution_time', 300); // 5 minutes should be enough for most operations
+// CRITICAL FIX: Increase max_execution_time for large datasets (10,000+ products)
+// Processing 10,000 products can take 10-15 minutes depending on server performance
+ini_set('max_execution_time', 1800); // 30 minutes for large imports (was 300 = 5 minutes)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -162,6 +164,24 @@ class ProductProcessor
         return $flattened;
     }
 
+    /**
+     * Format seconds into human-readable time (e.g., "2m 30s")
+     */
+    private function formatTime(float $seconds): string
+    {
+        if ($seconds < 60) {
+            return sprintf("%.0fs", $seconds);
+        } elseif ($seconds < 3600) {
+            $minutes = floor($seconds / 60);
+            $secs = $seconds % 60;
+            return sprintf("%dm %ds", $minutes, $secs);
+        } else {
+            $hours = floor($seconds / 3600);
+            $minutes = floor(($seconds % 3600) / 60);
+            return sprintf("%dh %dm", $hours, $minutes);
+        }
+    }
+
     private function getInsertImageSql(): string
     {
         return "
@@ -180,7 +200,9 @@ class ProductProcessor
         $domains = [];
         $productTypes = [];
         $productCount = 0;
-        $batchSize = 50; // Use a standard batch size
+        // PERFORMANCE FIX: Increase batch size for faster processing
+        // Larger batches = fewer commits = faster overall processing
+        $batchSize = 500; // Increased from 50 to 500 for better performance
 
         // --- FIX 1: Initialize $fileCounter to prevent 'Undefined variable' warning on line 181 ---
         $fileCounter = 0;
@@ -197,8 +219,16 @@ class ProductProcessor
 
             $this->db->beginTransaction();
 
+            // PERFORMANCE FIX: Track start time for progress reporting
+            $startTime = microtime(true);
+
             // Start processing files
             foreach ($productFiles as $filePath) {
+                // TIMEOUT FIX: Reset execution time limit every 100 files to prevent timeout
+                if ($fileCounter % 100 === 0 && $fileCounter > 0) {
+                    set_time_limit(1800); // Reset to 30 minutes
+                }
+
                 // Read the JSON content
                 $jsonContent = file_get_contents($filePath);
                 $product = json_decode($jsonContent, true);
@@ -252,11 +282,26 @@ class ProductProcessor
                     $domains[] = $domainData['domain'];
                 }
 
-                // Commit batch
+                // Commit batch with enhanced progress reporting
                 if ($fileCounter % $batchSize === 0) {
                     $this->db->commit();
                     $this->db->beginTransaction();
-                    echo "--> [DB] Batch of {$batchSize} committed. ({$fileCounter}/{$fileCount})\n";
+
+                    // PERFORMANCE FIX: Enhanced progress reporting with time estimates
+                    $elapsed = microtime(true) - $startTime;
+                    $percentage = ($fileCounter / $fileCount) * 100;
+                    $rate = $fileCounter / $elapsed;
+                    $remaining = ($fileCount - $fileCounter) / $rate;
+
+                    echo sprintf(
+                        "--> [DB] Batch committed: %d/%d (%.1f%%) | Rate: %.1f/sec | Elapsed: %s | ETA: %s\n",
+                        $fileCounter,
+                        $fileCount,
+                        $percentage,
+                        $rate,
+                        $this->formatTime($elapsed),
+                        $this->formatTime($remaining)
+                    );
                 }
             }
 
