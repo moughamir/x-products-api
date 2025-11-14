@@ -1,0 +1,19 @@
+# X-Products API Automated Tasks
+# Generated on: Wed Oct  8 21:14:43 UTC 2025
+# Project: /var/www/html/cosmos
+
+# Rotate featured items daily
+0 2 * * * cd /var/www/html/cosmos && php bin/rotate-featured-items.php --count 20 >> /var/www/html/cosmos/logs/cron.log 2>&1
+
+# Weekly database optimization
+0 3 * * 0 cd /var/www/html/cosmos && php bin/optimize-database.php --force >> /var/www/html/cosmos/logs/cron.log 2>&1
+
+# Clean expired sessions
+0 4 * * * cd /var/www/html/cosmos && php bin/clean-sessions.php >> /var/www/html/cosmos/logs/cron.log 2>&1
+
+# Generate OpenAPI documentation
+0 5 * * * cd /var/www/html/cosmos && php bin/generate-openapi.php src -o /var/www/html/cosmos/openapi.json --format json >> /var/www/html/cosmos/logs/cron.log 2>&1
+
+# Monthly database backup
+0 1 1 * * cd /var/www/html/cosmos && bash bin/backup-databases.sh >> /var/www/html/cosmos/logs/cron.log 2>&1
+

@@ -105,7 +105,6 @@ try {
         FROM products
         WHERE rating >= {$options['min_rating']}
           AND review_count >= {$options['min_reviews']}
-          AND in_stock = 1
           AND (tags NOT LIKE '%featured%' OR tags IS NULL)
         ORDER BY 
           rating DESC,

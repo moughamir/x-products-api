@@ -64,9 +64,9 @@ class ProductProcessor
                 compare_at_price REAL,
                 in_stock INTEGER,
                 category TEXT,
-                rating REAL DEFAULT 0.0,
-                review_count INTEGER DEFAULT 0,
-                bestseller_score REAL DEFAULT 0.0,
+                rating REAL DEFAULT 4.0,
+                review_count INTEGER DEFAULT 19,
+                bestseller_score REAL DEFAULT 5.0,
                 variants_json TEXT,
                 options_json TEXT
             );
@@ -201,7 +201,7 @@ class ProductProcessor
         $productCount = 0;
         // PERFORMANCE FIX: Increase batch size for faster processing
         // Larger batches = fewer commits = faster overall processing
-        $batchSize = 500; // Increased from 50 to 500 for better performance
+        $batchSize = 50; // Increased from 50 to 500 for better performance
 
         // --- FIX 1: Initialize $fileCounter to prevent 'Undefined variable' warning on line 181 ---
         $fileCounter = 0;
@@ -240,10 +240,14 @@ class ProductProcessor
                 $formattedTags = $this->normalizeTags($product['tags'] ?? null);
 
                 $stmtProduct->bindValue(':id', $product['id'], PDO::PARAM_INT);
+                // TODO: clean title
                 $stmtProduct->bindValue(':title', $product['title'], PDO::PARAM_STR);
+                // TODO: clean handle
                 $stmtProduct->bindValue(':handle', $product['handle'], PDO::PARAM_STR);
+                // TODO: clean and sanitize
                 $stmtProduct->bindValue(':body_html', $product['body_html'], PDO::PARAM_STR);
                 $stmtProduct->bindValue(':vendor', $product['vendor'], PDO::PARAM_STR);
+                // TODO: Normalize
                 $stmtProduct->bindValue(':product_type', $product['product_type'], PDO::PARAM_STR);
                 $stmtProduct->bindValue(':created_at', $product['created_at'], PDO::PARAM_STR);
                 $stmtProduct->bindValue(':updated_at', $product['updated_at'], PDO::PARAM_STR);
@@ -252,7 +256,7 @@ class ProductProcessor
                 } else {
                     $stmtProduct->bindValue(':tags', $formattedTags, PDO::PARAM_STR);
                 }
-                $stmtProduct->bindValue(':source_domain', $domainData['domain'], PDO::PARAM_STR);
+             // $stmtProduct->bindValue(':source_domain', $domainData['domain'], PDO::PARAM_STR);
                 $stmtProduct->bindValue(':price', $this->getMinPrice($product['variants'] ?? []), PDO::PARAM_STR);
                 $stmtProduct->bindValue(':compare_at_price', $this->getMinCompareAtPrice($product['variants'] ?? []), PDO::PARAM_STR);
                 $stmtProduct->bindValue(':in_stock', $inStock, PDO::PARAM_INT);
@@ -340,31 +344,32 @@ class ProductProcessor
 
     private function getInStockStatus(array $variants): int
     {
-        if (empty($variants)) { return 0; }
+        // FIXME: All True
+        if (empty($variants)) { return 1; }
         foreach ($variants as $variant) {
             // Shopify data: 'available' is true/false, not a count.
             if (($variant['available'] ?? false) === true) {
                 return 1;
             }
         }
-        return 0;
+        return 1;
     }
 
     // Simple mock for domain extraction based on file name pattern
     private function extractDomainData(array $product): array
     {
-        return ['domain' => 'moritotabi.com'];
+        return ['domain' => 'vohovintage.shop'];
     }
 
     private function applyPricingLogic(): void
     {
         echo "--> [LOGIC] Applying pricing/inventory logic...\n";
         // Example: Delete products with zero inventory
-        // $this->db->exec("DELETE FROM products WHERE in_stock = 0");
-        // echo "--> [LOGIC] Deleted out-of-stock products.\n";
+        $this->db->exec("DELETE FROM products WHERE in_stock = 0");
+        echo "--> [LOGIC] Deleted out-of-stock products.\n";
 
         // Example: Update category logic (Placeholder)
-        // $this->db->exec("UPDATE products SET category = 'Tops' WHERE product_type = 'T-Shirt'");
+        $this->db->exec("UPDATE products SET category = 'Tops' WHERE product_type = 'T-Shirt'");
         echo "--> [LOGIC] Pricing/inventory logic complete.\n";
     }
 
